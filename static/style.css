@@ -38,6 +38,8 @@ main {
 	margin: 10px auto;
 	padding: 25px;
 	background-color: #111;
+}
+main.pre {
 	white-space: pre-wrap;
 }
 
