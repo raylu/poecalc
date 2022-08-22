@@ -39,6 +39,8 @@ class Auras:
 					value = stat_values[i]['value']
 
 				aura_effect = char_stats.aura_effect
+				for support, support_level in supports:
+					aura_effect += self.support_aura_effect(support, support_level)
 				value = self.scaled_value(value, aura_effect, text['index_handlers'][0])
 
 				try:
@@ -76,6 +78,8 @@ class Auras:
 					level_mods.vaal += int(m.group(1))
 				elif m := re.match(r'(.\d+) to Level of Socketed Non-Vaal Gems', mod):
 					level_mods.non_vaal += int(m.group(1))
+				elif m := re.match(r'Socketed Gems are Supported by Level (\d+) (.+)', mod):
+					item_supports.append((m.group(2) + ' Support', int(m.group(1))))
 				elif m := re.match(r'Grants Level (\d+) (.+) Skill', mod):
 					item_skill = (m.group(2), int(m.group(1)))
 
@@ -120,6 +124,16 @@ class Auras:
 		for gem in item['socketedItems']:
 			if gem['support'] and gem['socket'] in linked_sockets:
 				yield self.parse_gem(gem, level_mods)
+
+	def support_aura_effect(self, support, level) -> int:
+		# TODO: handle arrogance quality
+		gem_info = self.gem_data[support]
+		stats = gem_info['per_level'][str(level)]['stats']
+		aura_effect = 0
+		for i, stat in enumerate(gem_info['static']['stats']):
+			if stat['id'] in ['non_curse_aura_effect_+%', 'aura_effect_+%']:
+				aura_effect += stats[i]['value']
+		return aura_effect
 
 	def scaled_value(self, value: int, aura_effect: int, index_handlers: list[str]) -> Union[int, float]:
 		allow_float = False
