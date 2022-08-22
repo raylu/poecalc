@@ -19,7 +19,8 @@ def root(request):
 
 def analyze_auras(request, account, character):
 	results = '\n\n'.join('\n'.join(ar) for ar in aura_analyzer.analyze(account, character))
-	return Response.render(request, 'auras.jinja2', {'results': results})
+	return Response.render(request, 'auras.jinja2',
+			{'results': results, 'account': account, 'character': character})
 
 def static(request, path):
 	content_type, _ = mimetypes.guess_type(path)
