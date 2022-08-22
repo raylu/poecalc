@@ -16,7 +16,7 @@ def load() -> tuple[dict[str, dict], dict[str, str]]:
 	for translation in raw_text:
 		for k in translation['ids']:
 			translated = translation['English'][0]
-			if translated['string'].startswith('You and nearby '):
+			if any(translated['string'].startswith(prefix + ' ') for prefix in ['You and nearby', 'Aura grants']):
 				text[k] = translated
 
 	return gems, text

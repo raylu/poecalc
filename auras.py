@@ -54,6 +54,9 @@ class Auras:
 					elif not formatted.startswith('Regenerate '):
 						raise Exception('unhandled formatted line: ' + formatted)
 					print(formatted)
+				elif formatted.startswith('Aura grants '):
+					formatted = formatted[len('Aura grants '):]
+					print(formatted)
 				elif not formatted.startswith('You and nearby Non-Minion Allies have a '):
 					raise Exception('unhandled formatted line: ' + formatted)
 				i += 1
@@ -65,6 +68,7 @@ class Auras:
 				continue
 			level_mods = ItemLevelMods()
 			item_supports = []
+			item_skill = None
 			for mod in item.get('explicitMods', []):
 				if m := re.match(r'(.\d+) to Level of Socketed Aura Gems', mod):
 					level_mods.aura += int(m.group(1))
@@ -72,8 +76,8 @@ class Auras:
 					level_mods.vaal += int(m.group(1))
 				elif m := re.match(r'(.\d+) to Level of Socketed Non-Vaal Gems', mod):
 					level_mods.non_vaal += int(m.group(1))
-				elif m := re.match(r'Socketed Gems are Supported by Level (\d+) Generosity', mod):
-					item_supports.append(('Generosity Support', int(m.group(1))))
+				elif m := re.match(r'Grants Level (\d+) (.+) Skill', mod):
+					item_skill = (m.group(2), int(m.group(1)))
 
 			for gem in item.get('socketedItems', []):
 				if gem['support']:
@@ -83,6 +87,10 @@ class Auras:
 					continue
 				supports = item_supports + list(self.iter_supports(item, gem['socket'], level_mods))
 				yield name, level, supports
+
+			if item_skill is not None:
+				all_supports = [self.parse_gem(gem, level_mods) for gem in item['socketedItems'] if gem['support']]
+				yield item_skill[0], item_skill[1], all_supports
 
 	def parse_gem(self, gem: dict, level_mods: ItemLevelMods):
 		name = gem['baseType']
