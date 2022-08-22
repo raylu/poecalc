@@ -13,10 +13,11 @@ def load() -> tuple[dict[str, dict], dict[str, str]]:
 	text: dict[str, str] = {}
 	with open('../RePoE/RePoE/data/stat_translations/aura_skill.json', 'rb') as f:
 		raw_text: list[dict] = json.load(f)
+	prefixes = ['You and nearby', 'Aura grants', 'Buff grants']
 	for translation in raw_text:
 		for k in translation['ids']:
 			translated = translation['English'][0]
-			if any(translated['string'].startswith(prefix + ' ') for prefix in ['You and nearby', 'Aura grants']):
+			if any(translated['string'].startswith(prefix + ' ') for prefix in prefixes):
 				text[k] = translated
 
 	return gems, text

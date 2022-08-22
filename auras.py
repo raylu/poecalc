@@ -56,7 +56,7 @@ class Auras:
 					elif not formatted.startswith('Regenerate '):
 						raise Exception('unhandled formatted line: ' + formatted)
 					print(formatted)
-				elif formatted.startswith('Aura grants '):
+				elif formatted.startswith('Aura grants ') or formatted.startswith('Buff grants '):
 					formatted = formatted[len('Aura grants '):]
 					print(formatted)
 				elif not formatted.startswith('You and nearby Non-Minion Allies have a '):
