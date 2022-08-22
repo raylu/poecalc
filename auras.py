@@ -37,12 +37,13 @@ class Auras:
 					value = stat['value']
 				except KeyError:
 					value = stat_values[i]['value']
-				value = self.scaled_value(value, text['index_handlers'][0])
+				aura_effect = char_stats.aura_effect
+				value = self.scaled_value(value, aura_effect, text['index_handlers'][0])
 
 				try:
 					print('\t', text['string'].format(value))
 				except IndexError: # 2 mod stat
-					value2 = self.scaled_value(stat_values[i+1]['value'], text['index_handlers'][1])
+					value2 = self.scaled_value(stat_values[i+1]['value'], aura_effect, text['index_handlers'][1])
 					print('\t', text['string'].format(value, value2))
 					i += 1
 				i += 1
@@ -97,12 +98,13 @@ class Auras:
 			if gem['support'] and gem['socket'] in linked_sockets:
 				yield self.parse_gem(gem, level_mods)
 
-	def scaled_value(self, value, index_handlers: list[str]):
+	def scaled_value(self, value: int, aura_effect: int, index_handlers: list[str]) -> float:
 		for handler in index_handlers:
 			if handler == 'per_minute_to_per_second':
 				value /= 60
 			else:
 				raise Exception('unhandled index_handler: ' + handler)
+		value *= 1 + aura_effect / 100
 		return value
 
 if __name__ == '__main__':
