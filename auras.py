@@ -61,6 +61,8 @@ class Auras:
 
 	def iter_gems(self, items):
 		for item in items:
+			if item['inventoryId'] in ['Weapon2', 'Offhand2']:
+				continue
 			level_mods = ItemLevelMods()
 			item_supports = []
 			for mod in item.get('explicitMods', []):
@@ -77,6 +79,8 @@ class Auras:
 				if gem['support']:
 					continue
 				name, level = self.parse_gem(gem, level_mods)
+				if 'Aura' not in self.gem_data[name]['active_skill']['types']:
+					continue
 				supports = item_supports + list(self.iter_supports(item, gem['socket'], level_mods))
 				yield name, level, supports
 

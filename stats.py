@@ -31,6 +31,8 @@ def fetch_stats(account, character_name) -> tuple[Stats, dict]:
 		aura_effect=0)
 
 	for item in character['items']:
+		if item['inventoryId'] in ['Weapon2', 'Offhand2']:
+			continue
 		_parse_item(stats, item)
 	for item in skills['items']: # jewels
 		_parse_item(stats, item)
