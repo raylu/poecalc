@@ -1,5 +1,3 @@
-#!/usr/bin/env python3
-
 import dataclasses
 import re
 from typing import Union
@@ -110,7 +108,10 @@ class Auras:
 		level = None
 		for prop in gem['properties']:
 			if prop['name'] == 'Level' and prop['type'] == 5:
-				level = int(prop['values'][0][0])
+				if prop['values'][0][0] == '20 (Max)':
+					level = 20
+				else:
+					level = int(prop['values'][0][0])
 				break
 		assert level is not None, "couldn't get level for " + gem['typeLine']
 
@@ -134,7 +135,7 @@ class Auras:
 	def support_aura_effect(self, support, level) -> int:
 		# TODO: handle arrogance quality
 		gem_info = self.gem_data[support]
-		stats = gem_info['per_level'][str(level)]['stats']
+		stats = gem_info['per_level'][str(level)].get('stats', [])
 		aura_effect = 0
 		for i, stat in enumerate(gem_info['static']['stats']):
 			if stat['id'] in ['non_curse_aura_effect_+%', 'aura_effect_+%']:

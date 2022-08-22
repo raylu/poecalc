@@ -1,5 +1,3 @@
-#!/usr/bin/env python3
-
 import stats
 
 def analyze(account, character_name):
