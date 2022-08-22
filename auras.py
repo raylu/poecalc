@@ -9,6 +9,7 @@ import stats
 
 @dataclasses.dataclass
 class ItemLevelMods:
+	all: int = 0
 	aura: int = 0
 	vaal: int = 0
 	non_vaal: int = 0
@@ -72,7 +73,9 @@ class Auras:
 			item_supports = []
 			item_skill = None
 			for mod in item.get('explicitMods', []):
-				if m := re.match(r'(.\d+) to Level of Socketed Aura Gems', mod):
+				if m := re.match(r'(.\d+) to Level of Socketed Gems', mod):
+					level_mods.all += int(m.group(1))
+				elif m := re.match(r'(.\d+) to Level of Socketed Aura Gems', mod):
 					level_mods.aura += int(m.group(1))
 				elif m := re.match(r'(.\d+) to Level of Socketed Vaal Gems', mod):
 					level_mods.vaal += int(m.group(1))
@@ -109,6 +112,7 @@ class Auras:
 				break
 		assert level is not None, "couldn't get level for " + gem['typeLine']
 
+		level += level_mods.all
 		if 'aura' in gem_info['tags']:
 			level += level_mods.aura
 		if 'vaal' in gem_info['tags']:
