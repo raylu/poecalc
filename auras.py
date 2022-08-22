@@ -14,16 +14,16 @@ class ItemLevelMods:
 	vaal: int = 0
 	non_vaal: int = 0
 
-
 class Auras:
 	def __init__(self) -> None:
 		self.gem_data, self.text = data.load()
 
-	def analyze(self, account, character_name):
+	def analyze(self, account: str, character_name: str) -> list[list[str]]:
 		char_stats, character = stats.fetch_stats(account, character_name)
 
+		results = []
 		for gem_name, level, supports in self.iter_gems(character['items']):
-			print('//', gem_name, level, supports)
+			aura_result = [f'// {gem_name} {level} {supports}']
 			gem_info = self.gem_data[gem_name]
 			stat_values = gem_info['per_level'][str(level)]['stats']
 			gem_stats = gem_info['static']['stats']
@@ -56,14 +56,15 @@ class Auras:
 						formatted = formatted[5:]
 					elif not formatted.startswith('Regenerate '):
 						raise Exception('unhandled formatted line: ' + formatted)
-					print(formatted)
+					aura_result.append(formatted)
 				elif formatted.startswith('Aura grants ') or formatted.startswith('Buff grants '):
 					formatted = formatted[len('Aura grants '):]
-					print(formatted)
+					aura_result.append(formatted)
 				elif not formatted.startswith('You and nearby Non-Minion Allies have a '):
 					raise Exception('unhandled formatted line: ' + formatted)
 				i += 1
-			print()
+			results.append(aura_result)
+		return results
 
 	def iter_gems(self, items):
 		for item in items:
@@ -153,4 +154,4 @@ class Auras:
 		return value
 
 if __name__ == '__main__':
-	Auras().analyze('raylu', 'auraraylu')
+	print('\n\n'.join('\n'.join(ar) for ar in Auras().analyze('raylu', 'auraraylu')))

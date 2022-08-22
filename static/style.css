@@ -1,0 +1,49 @@
+* {
+	box-sizing: border-box;
+}
+
+body {
+	background-color: #000;
+	color: #aaa;
+	font: 18px monospace;
+}
+
+a:link, a:visited, a:active {
+	color: #58a;
+	text-decoration: none;
+}
+a:hover {
+	color: #5ad;
+}
+
+input {
+	background-color: #111;
+	color: inherit;
+	border: 1px solid #222;
+	font: inherit;
+}
+
+form#auras {
+	margin: 2em auto;
+	width: 250px;
+	text-align: center;
+}
+form#auras input {
+	margin: 0.2em;
+}
+
+main {
+	width: 90%;
+	max-width: 1200px;
+	margin: 10px auto;
+	padding: 25px;
+	background-color: #111;
+	white-space: pre-wrap;
+}
+
+footer {
+	margin-top: 100px;
+	text-align: center;
+	font-family: monospace;
+	font-size: 14px;
+}

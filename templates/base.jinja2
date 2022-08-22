@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>PoE calc</title>
+		<link rel="stylesheet" href="/static/style.css">
+		<link rel="icon" href="/static/favicon.png">
+	</head>
+	<body>
+		<form id="auras">
+			<input type="text" name="account" placeholder="account">
+			<input type="text" name="character" placeholder="character">
+			<input type="submit" value="go">
+		</form>
+
+		{% block body %}{% endblock body %}
+
+		<footer>
+			<a href="https://github.com/raylu/poecalc">github.com/raylu/poecalc</a>
+		</footer>
+
+		<script src="/static/auras.js"></script>
+	</body>
+</html>
