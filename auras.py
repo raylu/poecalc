@@ -15,7 +15,7 @@ class ItemLevelMods:
 
 class Auras:
 	def __init__(self) -> None:
-		self.gem_data = data.load()
+		self.gem_data, self.text = data.load()
 
 	def analyze(self, account, character_name):
 		char_stats, character = stats.fetch_stats(account, character_name)
@@ -23,6 +23,29 @@ class Auras:
 
 		for gem_name, level, supports in self.iter_gems(character['items']):
 			print(gem_name, level, supports)
+			gem_info = self.gem_data[gem_name]
+			stat_values = gem_info['per_level'][str(level)]['stats']
+			gem_stats = gem_info['static']['stats']
+			i = 0
+			while i < len(gem_stats):
+				stat = gem_stats[i]
+				text = self.text.get(stat['id'])
+				if text is None:
+					i += 1
+					continue
+				try:
+					value = stat['value']
+				except KeyError:
+					value = stat_values[i]['value']
+				value = self.scaled_value(value, text['index_handlers'][0])
+
+				try:
+					print('\t', text['string'].format(value))
+				except IndexError: # 2 mod stat
+					value2 = self.scaled_value(stat_values[i+1]['value'], text['index_handlers'][1])
+					print('\t', text['string'].format(value, value2))
+					i += 1
+				i += 1
 
 	def iter_gems(self, items):
 		for item in items:
@@ -73,6 +96,14 @@ class Auras:
 		for gem in item['socketedItems']:
 			if gem['support'] and gem['socket'] in linked_sockets:
 				yield self.parse_gem(gem, level_mods)
+
+	def scaled_value(self, value, index_handlers: list[str]):
+		for handler in index_handlers:
+			if handler == 'per_minute_to_per_second':
+				value /= 60
+			else:
+				raise Exception('unhandled index_handler: ' + handler)
+		return value
 
 if __name__ == '__main__':
 	Auras().analyze('raylu', 'auraraylu')
