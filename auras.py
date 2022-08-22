@@ -2,6 +2,7 @@
 
 import dataclasses
 import re
+from typing import Union
 
 import data
 import stats
@@ -19,10 +20,9 @@ class Auras:
 
 	def analyze(self, account, character_name):
 		char_stats, character = stats.fetch_stats(account, character_name)
-		print(char_stats)
 
 		for gem_name, level, supports in self.iter_gems(character['items']):
-			print(gem_name, level, supports)
+			print('//', gem_name, level, supports)
 			gem_info = self.gem_data[gem_name]
 			stat_values = gem_info['per_level'][str(level)]['stats']
 			gem_stats = gem_info['static']['stats']
@@ -37,16 +37,27 @@ class Auras:
 					value = stat['value']
 				except KeyError:
 					value = stat_values[i]['value']
+
 				aura_effect = char_stats.aura_effect
 				value = self.scaled_value(value, aura_effect, text['index_handlers'][0])
 
 				try:
-					print('\t', text['string'].format(value))
+					formatted = text['string'].format(value)
 				except IndexError: # 2 mod stat
 					value2 = self.scaled_value(stat_values[i+1]['value'], aura_effect, text['index_handlers'][1])
-					print('\t', text['string'].format(value, value2))
+					formatted = text['string'].format(value, value2)
 					i += 1
+				if formatted.casefold().startswith('you and nearby allies '):
+					formatted = formatted[len('you and nearby allies '):]
+					if any(formatted.startswith(prefix + ' ') for prefix in ['deal', 'have', 'gain']):
+						formatted = formatted[5:]
+					elif not formatted.startswith('Regenerate '):
+						raise Exception('unhandled formatted line: ' + formatted)
+					print(formatted)
+				elif not formatted.startswith('You and nearby Non-Minion Allies have a '):
+					raise Exception('unhandled formatted line: ' + formatted)
 				i += 1
+			print()
 
 	def iter_gems(self, items):
 		for item in items:
@@ -98,13 +109,17 @@ class Auras:
 			if gem['support'] and gem['socket'] in linked_sockets:
 				yield self.parse_gem(gem, level_mods)
 
-	def scaled_value(self, value: int, aura_effect: int, index_handlers: list[str]) -> float:
+	def scaled_value(self, value: int, aura_effect: int, index_handlers: list[str]) -> Union[int, float]:
+		allow_float = False
 		for handler in index_handlers:
 			if handler == 'per_minute_to_per_second':
 				value /= 60
+				allow_float = True
 			else:
 				raise Exception('unhandled index_handler: ' + handler)
 		value *= 1 + aura_effect / 100
+		if not allow_float:
+			value = int(value)
 		return value
 
 if __name__ == '__main__':
