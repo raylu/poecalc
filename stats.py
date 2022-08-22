@@ -12,7 +12,7 @@ class Stats:
 	aura_effect: int
 
 def fetch_stats(account, character_name) -> tuple[Stats, dict]:
-	client = httpx.Client()
+	client = httpx.Client(timeout=15)
 	client.headers['User-Agent'] = 'Mozilla/5.0'
 	params = {'accountName': account, 'character': character_name, 'realm': 'pc'}
 	r = client.post('https://www.pathofexile.com/character-window/get-items', data=params)
