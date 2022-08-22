@@ -108,10 +108,10 @@ class Auras:
 		level = None
 		for prop in gem['properties']:
 			if prop['name'] == 'Level' and prop['type'] == 5:
-				if prop['values'][0][0] == '20 (Max)':
-					level = 20
-				else:
-					level = int(prop['values'][0][0])
+				level_str: str = prop['values'][0][0]
+				if level_str.endswith(' (Max)'):
+					level_str = level_str[:-len(' (Max)')]
+				level = int(level_str)
 				break
 		assert level is not None, "couldn't get level for " + gem['typeLine']
 
