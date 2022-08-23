@@ -36,10 +36,16 @@ def fetch_stats(account, character_name) -> tuple[Stats, dict]:
 		_parse_item(stats, item)
 	for item in skills['items']: # jewels
 		_parse_item(stats, item)
+	for node_stats in iter_passives(tree, masteries, skills):
+		_parse_mods(stats, node_stats)
 
+	stats.flat_life += stats.strength // 2
+	return stats, character
+
+def iter_passives(tree, masteries, skills):
 	for h in skills['hashes']:
 		node = tree['nodes'][str(h)]
-		_parse_mods(stats, node['stats'])
+		yield node['stats']
 
 	cluster_jewel_nodes = {}
 	for jewel in skills['jewel_data'].values():
@@ -47,20 +53,17 @@ def fetch_stats(account, character_name) -> tuple[Stats, dict]:
 			cluster_jewel_nodes.update(jewel['subgraph']['nodes'])
 	for h in skills['hashes_ex']:
 		node = cluster_jewel_nodes[str(h)]
-		_parse_mods(stats, node['stats'])
+		yield node['stats']
 
 	for mastery_effect in skills['mastery_effects']:
 		node_stats = masteries[int(mastery_effect) >> 16]
-		_parse_mods(stats, node_stats)
+		yield node_stats
 
-	stats.flat_life += stats.strength // 2
-	return stats, character
-
-tree_dict = masteries = None
+tree_dict = masteries_dict = None
 def _passive_skill_tree(client) -> tuple[dict, dict]:
-	global tree_dict, masteries
+	global tree_dict, masteries_dict
 	if tree_dict is not None:
-		return tree_dict, masteries
+		return tree_dict, masteries_dict
 
 	r = client.get('https://www.pathofexile.com/passive-skill-tree')
 	r.raise_for_status()
@@ -69,13 +72,13 @@ def _passive_skill_tree(client) -> tuple[dict, dict]:
 	tree = tree[:tree.index('};') + 1]
 	tree_dict = json.loads(tree)
 
-	masteries = {}
+	masteries_dict = {}
 	for node in tree_dict['nodes'].values():
 		if 'masteryEffects' not in node:
 			continue
 		for effect in node['masteryEffects']:
-			masteries[effect['effect']] = effect['stats']
-	return tree_dict, masteries
+			masteries_dict[effect['effect']] = effect['stats']
+	return tree_dict, masteries_dict
 
 matchers = [(re.compile(pattern), attr) for pattern, attr in [
 	(r'\+(\d+) to maximum Life', 'flat_life'),
