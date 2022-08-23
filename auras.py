@@ -140,16 +140,17 @@ class Auras:
 				i += 1
 			if formatted.casefold().startswith('you and nearby allies '):
 				formatted = formatted[len('you and nearby allies '):]
-				if any(formatted.startswith(prefix + ' ') for prefix in ['deal', 'have', 'gain']):
-					formatted = formatted[5:]
+				verb, mod = formatted.split(' ', 1)
+				if verb in ['deal', 'have', 'gain', 'are']:
+					formatted = mod
 				elif not formatted.startswith('Regenerate '):
-					raise Exception('unhandled formatted line: ' + formatted)
+					raise Exception(f'unhandled formatted line from {text["string"]}: {formatted}')
 				aura_result.append(formatted)
 			elif formatted.startswith('Aura grants ') or formatted.startswith('Buff grants '):
 				formatted = formatted[len('Aura grants '):]
 				aura_result.append(formatted)
 			elif not formatted.startswith('You and nearby Non-Minion Allies have a '):
-				raise Exception('unhandled formatted line: ' + formatted)
+				raise Exception(f'unhandled formatted line from {gem_name}: {formatted}')
 			i += 1
 
 		return aura_result
