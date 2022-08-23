@@ -55,7 +55,7 @@ class Auras:
 						item_skill = (m.group(2), int(m.group(1)))
 
 			for gem in item.get('socketedItems', []):
-				if gem['support']:
+				if gem.get('support', True): # abyss jewels don't have 'support' keys
 					continue
 				name, level = self.parse_gem(gem, level_mods, vaal)
 				types = self.gem_data[name]['active_skill']['types']
