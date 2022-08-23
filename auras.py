@@ -11,6 +11,7 @@ class ItemLevelMods:
 	aura: int = 0
 	vaal: int = 0
 	non_vaal: int = 0
+	aoe: int = 0
 
 class Auras:
 	def __init__(self) -> None:
@@ -81,6 +82,8 @@ class Auras:
 					level_mods.vaal += int(m.group(1))
 				elif m := re.match(r'(.\d+) to Level of Socketed Non-Vaal Gems', mod):
 					level_mods.non_vaal += int(m.group(1))
+				elif m := re.match(r'(.\d+) to Level of Socketed AoE Gems', mod):
+					level_mods.aoe += int(m.group(1))
 				elif m := re.match(r'Socketed Gems are Supported by Level (\d+) (.+)', mod):
 					item_supports.append((m.group(2) + ' Support', int(m.group(1))))
 				elif m := re.match(r'Grants Level (\d+) (.+) Skill', mod):
@@ -122,6 +125,8 @@ class Auras:
 			level += level_mods.vaal
 		else:
 			level += level_mods.non_vaal
+		if 'area' in gem_info['tags']:
+			level += level_mods.aoe
 
 		return name, level
 
