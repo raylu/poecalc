@@ -19,16 +19,20 @@ class Auras:
 
 	def analyze(self, account: str, character_name: str) -> tuple[list[list[str]], list[list[str]]]:
 		char_stats, character, skills = stats.fetch_stats(account, character_name)
+		num_auras = 0
 
 		results = [[f'// character increased aura effect: {char_stats.aura_effect}%']]
 		for gem_name, level, supports in self.iter_gems(character['items'], vaal=False):
-			results.append(self.aura_mod(char_stats, gem_name, level, supports))
+			aura_result, ally_aura = self.aura_mod(char_stats, gem_name, level, supports)
+			results.append(aura_result)
+			num_auras += ally_aura
 
 		vaal_results = []
 		for gem_name, level, supports in self.iter_gems(character['items'], vaal=True):
-			vaal_results.append(self.aura_mod(char_stats, gem_name, level, supports))
+			aura_result, ally_aura = self.aura_mod(char_stats, gem_name, level, supports)
+			vaal_results.append(aura_result)
+			num_auras += ally_aura
 
-		num_auras = len(results) - 1
 		tree, masteries = stats.passive_skill_tree()
 		for node_stats in stats.iter_passives(tree, masteries, skills):
 			if ascendancy_result := self.ascendancy_mod(num_auras, node_stats):
@@ -114,7 +118,7 @@ class Auras:
 			if gem['support'] and gem['socket'] in linked_sockets:
 				yield self.parse_gem(gem, level_mods)
 
-	def aura_mod(self, char_stats: stats.Stats, gem_name: str, level: int, supports: list):
+	def aura_mod(self, char_stats: stats.Stats, gem_name: str, level: int, supports: list) -> tuple[list[str], bool]:
 		aura_effect = char_stats.aura_effect
 		for support, support_level in supports:
 			aura_effect += self.support_aura_effect(support, support_level)
@@ -159,7 +163,8 @@ class Auras:
 				raise Exception(f'unhandled formatted line from {gem_name}: {formatted}')
 			i += 1
 
-		return aura_result
+		ally_aura = 'AuraAffectsEnemies' not in gem_info['active_skill']['types']
+		return aura_result, ally_aura
 
 	def support_aura_effect(self, support, level) -> int:
 		# TODO: handle arrogance quality
