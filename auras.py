@@ -127,6 +127,9 @@ class Auras:
 			level += level_mods.non_vaal
 		if 'area' in gem_info['tags']:
 			level += level_mods.aoe
+		if level < 1:
+			# this is not the current behavior, but the current behavior is believed to be a bug
+			level = 1
 
 		return name, level
 
