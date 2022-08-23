@@ -17,57 +17,20 @@ class Auras:
 	def __init__(self) -> None:
 		self.gem_data, self.text = data.load()
 
-	def analyze(self, account: str, character_name: str) -> list[list[str]]:
+	def analyze(self, account: str, character_name: str) -> tuple[list[list[str]], list[list[str]]]:
 		char_stats, character = stats.fetch_stats(account, character_name)
 
 		results = [[f'// character increased aura effect: {char_stats.aura_effect}%']]
-		for gem_name, level, supports in self.iter_gems(character['items']):
-			aura_effect = char_stats.aura_effect
-			for support, support_level in supports:
-				aura_effect += self.support_aura_effect(support, support_level)
-			support_comment = ', '.join(f'{s} {l}' for s, l in supports)
-			aura_result = [f'// {gem_name} {level} ({support_comment}) {aura_effect}%']
+		for gem_name, level, supports in self.iter_gems(character['items'], vaal=False):
+			results.append(self.aura_mod(char_stats, gem_name, level, supports))
 
-			gem_info = self.gem_data[gem_name]
-			stat_values = gem_info['per_level'][str(level)]['stats']
-			gem_stats = gem_info['static']['stats']
-			i = 0
-			while i < len(gem_stats):
-				stat = gem_stats[i]
-				text = self.text.get(stat['id'])
-				if text is None:
-					i += 1
-					continue
-				try:
-					value = stat['value']
-				except KeyError:
-					value = stat_values[i]['value']
+		vaal_results = []
+		for gem_name, level, supports in self.iter_gems(character['items'], vaal=True):
+			vaal_results.append(self.aura_mod(char_stats, gem_name, level, supports))
 
-				value = self.scaled_value(value, aura_effect, text['index_handlers'][0])
+		return results, vaal_results
 
-				try:
-					formatted = text['string'].format(value)
-				except IndexError: # 2 mod stat
-					value2 = self.scaled_value(stat_values[i+1]['value'], aura_effect, text['index_handlers'][1])
-					formatted = text['string'].format(value, value2)
-					i += 1
-				if formatted.casefold().startswith('you and nearby allies '):
-					formatted = formatted[len('you and nearby allies '):]
-					if any(formatted.startswith(prefix + ' ') for prefix in ['deal', 'have', 'gain']):
-						formatted = formatted[5:]
-					elif not formatted.startswith('Regenerate '):
-						raise Exception('unhandled formatted line: ' + formatted)
-					aura_result.append(formatted)
-				elif formatted.startswith('Aura grants ') or formatted.startswith('Buff grants '):
-					formatted = formatted[len('Aura grants '):]
-					aura_result.append(formatted)
-				elif not formatted.startswith('You and nearby Non-Minion Allies have a '):
-					raise Exception('unhandled formatted line: ' + formatted)
-				i += 1
-			results.append(aura_result)
-		return results
-
-	def iter_gems(self, items):
+	def iter_gems(self, items, /, vaal: bool):
 		for item in items:
 			if item['inventoryId'] in ['Weapon2', 'Offhand2']:
 				continue
@@ -88,13 +51,17 @@ class Auras:
 				elif m := re.match(r'Socketed Gems are Supported by Level (\d+) (.+)', mod):
 					item_supports.append((m.group(2) + ' Support', int(m.group(1))))
 				elif m := re.match(r'Grants Level (\d+) (.+) Skill', mod):
-					item_skill = (m.group(2), int(m.group(1)))
+					if vaal == m.group(2).startswith('Vaal '):
+						item_skill = (m.group(2), int(m.group(1)))
 
 			for gem in item.get('socketedItems', []):
 				if gem['support']:
 					continue
-				name, level = self.parse_gem(gem, level_mods)
-				if 'Aura' not in self.gem_data[name]['active_skill']['types']:
+				name, level = self.parse_gem(gem, level_mods, vaal)
+				types = self.gem_data[name]['active_skill']['types']
+				if 'Aura' not in types:
+					continue
+				if vaal != ('Vaal' in types):
 					continue
 				supports = item_supports + list(self.iter_supports(item, gem['socket'], level_mods))
 				yield name, level, supports
@@ -103,10 +70,10 @@ class Auras:
 				all_supports = [self.parse_gem(gem, level_mods) for gem in item['socketedItems'] if gem['support']]
 				yield item_skill[0], item_skill[1], all_supports
 
-	def parse_gem(self, gem: dict, level_mods: ItemLevelMods):
+	def parse_gem(self, gem: dict, level_mods: ItemLevelMods, vaal=False):
 		name = gem['baseType']
 		gem_info = self.gem_data[name]
-		if 'hybrid' in gem:
+		if 'hybrid' in gem and not vaal:
 			name = gem['hybrid']['baseTypeName']
 
 		level = None
@@ -141,6 +108,52 @@ class Auras:
 			if gem['support'] and gem['socket'] in linked_sockets:
 				yield self.parse_gem(gem, level_mods)
 
+	def aura_mod(self, char_stats: stats.Stats, gem_name: str, level: int, supports: list):
+		aura_effect = char_stats.aura_effect
+		for support, support_level in supports:
+			aura_effect += self.support_aura_effect(support, support_level)
+		support_comment = ', '.join(f'{s} {l}' for s, l in supports)
+		aura_result = [f'// {gem_name} {level} ({support_comment}) {aura_effect}%']
+
+		gem_info = self.gem_data[gem_name]
+		stat_values = gem_info['per_level'][str(level)]['stats']
+		gem_stats = gem_info['static']['stats']
+		i = 0
+		while i < len(gem_stats):
+			stat = gem_stats[i]
+			text = self.text.get(stat['id'])
+			if text is None:
+				i += 1
+				continue
+			try:
+				value = stat['value']
+			except KeyError:
+				value = stat_values[i]['value']
+
+			value = self.scaled_value(value, aura_effect, text['index_handlers'][0])
+
+			try:
+				formatted = text['string'].format(value)
+			except IndexError: # 2 mod stat
+				value2 = self.scaled_value(stat_values[i+1]['value'], aura_effect, text['index_handlers'][1])
+				formatted = text['string'].format(value, value2)
+				i += 1
+			if formatted.casefold().startswith('you and nearby allies '):
+				formatted = formatted[len('you and nearby allies '):]
+				if any(formatted.startswith(prefix + ' ') for prefix in ['deal', 'have', 'gain']):
+					formatted = formatted[5:]
+				elif not formatted.startswith('Regenerate '):
+					raise Exception('unhandled formatted line: ' + formatted)
+				aura_result.append(formatted)
+			elif formatted.startswith('Aura grants ') or formatted.startswith('Buff grants '):
+				formatted = formatted[len('Aura grants '):]
+				aura_result.append(formatted)
+			elif not formatted.startswith('You and nearby Non-Minion Allies have a '):
+				raise Exception('unhandled formatted line: ' + formatted)
+			i += 1
+
+		return aura_result
+
 	def support_aura_effect(self, support, level) -> int:
 		# TODO: handle arrogance quality
 		gem_info = self.gem_data[support]
@@ -167,4 +180,4 @@ class Auras:
 		return value
 
 if __name__ == '__main__':
-	print('\n\n'.join('\n'.join(ar) for ar in Auras().analyze('raylu', 'auraraylu')))
+	print('\n\n'.join('\n'.join(ar) for result in Auras().analyze('raylu', 'auraraylu') for ar in result))
