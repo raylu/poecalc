@@ -18,7 +18,7 @@ class Auras:
 		self.gem_data, self.text = data.load()
 
 	def analyze(self, account: str, character_name: str) -> tuple[list[list[str]], list[list[str]]]:
-		char_stats, character = stats.fetch_stats(account, character_name)
+		char_stats, character, skills = stats.fetch_stats(account, character_name)
 
 		results = [[f'// character increased aura effect: {char_stats.aura_effect}%']]
 		for gem_name, level, supports in self.iter_gems(character['items'], vaal=False):
@@ -27,6 +27,12 @@ class Auras:
 		vaal_results = []
 		for gem_name, level, supports in self.iter_gems(character['items'], vaal=True):
 			vaal_results.append(self.aura_mod(char_stats, gem_name, level, supports))
+
+		num_auras = len(results) - 1
+		tree, masteries = stats.passive_skill_tree()
+		for node_stats in stats.iter_passives(tree, masteries, skills):
+			if ascendancy_result := self.ascendancy_mod(num_auras, node_stats):
+				results.append(ascendancy_result)
 
 		return results, vaal_results
 
@@ -179,6 +185,54 @@ class Auras:
 		else:
 			value = int(value)
 		return value
+
+	def ascendancy_mod(self, num_auras: int, node_stats: list[str]) -> list[str]:
+		# TODO: champion
+		if len(node_stats) == 5 and node_stats[0] == 'Melee Hits have 50% chance to Fortify':
+			return [
+				'// champion',
+				'Enemies Taunted by you take 10% increased Damage',
+				'Your Hits permanently Intimidate Enemies that are on Full Life',
+			]
+		elif len(node_stats) == 5 and node_stats[0] == '25% reduced Effect of Curses on you':
+			return [
+				'// guardian',
+				f'+{num_auras}% Physical Damage Reduction',
+				'While there are at least five nearby Allies, you and nearby Allies have Onslaught',
+			]
+		elif len(node_stats) == 5 and node_stats[0] == 'Your Offering Skills also affect you':
+			return [
+				'// necromancer',
+				f'{num_auras * 2}% increased Attack and Cast Speed',
+			]
+		elif len(node_stats) == 2 and node_stats[0] == 'Auras from your Skills grant +1% Physical Damage Reduction to you and Allies':
+			return [
+				'// unwavering faith',
+				f'+{num_auras}% Physical Damage Reduction',
+				f'{num_auras * 0.2}% of Life Regenerated per second',
+			]
+		elif len(node_stats) == 3 and node_stats[0] == '+20% to all Elemental Resistances':
+			return ['// radiant crusade'] + node_stats[1:]
+		elif len(node_stats) == 4 and node_stats[0] == 'Nearby Allies have 20% increased Attack, Cast and Movement Speed':
+			return [
+				'// unwavering crusade',
+				'20% increased Attack, Cast and Movement Speed',
+				'30% increased Area of Effect',
+			]
+		elif len(node_stats) == 3 and node_stats[0].startswith('Auras from your Skills grant 3% increased Attack and Cast\n'):
+			return [
+				'// commander of darkness',
+				f'{num_auras * 3}% increased Attack and Cast Speed',
+				'30% increased Damage',
+				'+30% to Elemental Resistances',
+			]
+		elif len(node_stats) == 4 and node_stats[0].startswith('For each nearby corpse, you and nearby Allies Regenerate 0.2% of Energy Shield'):
+			return [
+				'// essence glutton',
+				'For each nearby corpse, you and nearby Allies Regenerate 0.2% of Energy Shield per second, up to 2.0% per second',
+				'For each nearby corpse, you and nearby Allies Regenerate 5 Mana per second, up to 50 per second',
+			]
+
 
 if __name__ == '__main__':
 	print('\n\n'.join('\n'.join(ar) for result in Auras().analyze('raylu', 'auraraylu') for ar in result))

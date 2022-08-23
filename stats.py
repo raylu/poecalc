@@ -11,9 +11,10 @@ class Stats:
 	strength: int
 	aura_effect: int
 
+client = httpx.Client(timeout=15)
+client.headers['User-Agent'] = 'Mozilla/5.0'
+
 def fetch_stats(account, character_name) -> tuple[Stats, dict]:
-	client = httpx.Client(timeout=15)
-	client.headers['User-Agent'] = 'Mozilla/5.0'
 	params = {'accountName': account, 'character': character_name, 'realm': 'pc'}
 	r = client.post('https://www.pathofexile.com/character-window/get-items', data=params)
 	r.raise_for_status()
@@ -23,7 +24,7 @@ def fetch_stats(account, character_name) -> tuple[Stats, dict]:
 	r.raise_for_status()
 	skills = r.json()
 
-	tree, masteries = _passive_skill_tree(client)
+	tree, masteries = passive_skill_tree()
 
 	stats = Stats(flat_life=38 + character['character']['level'] * 12,
 		increased_life=0,
@@ -40,7 +41,7 @@ def fetch_stats(account, character_name) -> tuple[Stats, dict]:
 		_parse_mods(stats, node_stats)
 
 	stats.flat_life += stats.strength // 2
-	return stats, character
+	return stats, character, skills
 
 def iter_passives(tree, masteries, skills):
 	for h in skills['hashes']:
@@ -60,7 +61,7 @@ def iter_passives(tree, masteries, skills):
 		yield node_stats
 
 tree_dict = masteries_dict = None
-def _passive_skill_tree(client) -> tuple[dict, dict]:
+def passive_skill_tree() -> tuple[dict, dict]:
 	global tree_dict, masteries_dict
 	if tree_dict is not None:
 		return tree_dict, masteries_dict
