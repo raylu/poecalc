@@ -160,7 +160,9 @@ class Auras:
 			else:
 				raise Exception('unhandled index_handler: ' + handler)
 		value *= 1 + aura_effect / 100
-		if not allow_float:
+		if allow_float:
+			value = round(value, 1)
+		else:
 			value = int(value)
 		return value
 
