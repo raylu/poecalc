@@ -56,8 +56,13 @@ def fetch_stats(account, character_name) -> tuple[Stats, dict]:
 	stats.flat_life += stats.strength // 2
 	return stats, character
 
-def _passive_skill_tree(client):
-	r = client.get('https://www.pathofexile.com/passive-skill-tree', headers={'User-Agent': 'Mozilla/5.0'})
+tree_dict = masteries = None
+def _passive_skill_tree(client) -> tuple[dict, dict]:
+	global tree_dict, masteries
+	if tree_dict is not None:
+		return tree_dict, masteries
+
+	r = client.get('https://www.pathofexile.com/passive-skill-tree')
 	r.raise_for_status()
 	tree = r.text[r.text.index('passiveSkillTreeData'):]
 	tree = tree[tree.index('{'):]
