@@ -20,10 +20,14 @@ class Auras:
 	def analyze(self, account: str, character_name: str) -> list[list[str]]:
 		char_stats, character = stats.fetch_stats(account, character_name)
 
-		results = []
+		results = [[f'// character increased aura effect: {char_stats.aura_effect}%']]
 		for gem_name, level, supports in self.iter_gems(character['items']):
+			aura_effect = char_stats.aura_effect
+			for support, support_level in supports:
+				aura_effect += self.support_aura_effect(support, support_level)
 			support_comment = ', '.join(f'{s} {l}' for s, l in supports)
-			aura_result = [f'// {gem_name} {level} ({support_comment})']
+			aura_result = [f'// {gem_name} {level} ({support_comment}) {aura_effect}%']
+
 			gem_info = self.gem_data[gem_name]
 			stat_values = gem_info['per_level'][str(level)]['stats']
 			gem_stats = gem_info['static']['stats']
@@ -39,9 +43,6 @@ class Auras:
 				except KeyError:
 					value = stat_values[i]['value']
 
-				aura_effect = char_stats.aura_effect
-				for support, support_level in supports:
-					aura_effect += self.support_aura_effect(support, support_level)
 				value = self.scaled_value(value, aura_effect, text['index_handlers'][0])
 
 				try:
