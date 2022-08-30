@@ -193,6 +193,7 @@ class Auras:
 
 	def ascendancy_mod(self, num_auras: int, node_stats: list[str]) -> list[str]:
 		# TODO: champion
+		# TODO: scale mods by character aura effect
 		if len(node_stats) == 5 and node_stats[0] == 'Melee Hits have 50% chance to Fortify':
 			return [
 				'// champion',
