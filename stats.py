@@ -48,7 +48,7 @@ def fetch_stats(account, character_name) -> tuple[Stats, dict, dict]:
 	for item in skills['items']: # jewels
 		_parse_item(stats, item)
 	for notable_hash in stats.additional_notables:
-		skills["hashes"].append(notable_hash)
+		skills['hashes'].append(notable_hash)
 	for _, node_stats in iter_passives(tree, masteries, skills):
 		_parse_mods(stats, node_stats)
 
@@ -66,11 +66,11 @@ def iter_passives(tree, masteries, skills):
 			cluster_jewel_nodes.update(jewel['subgraph']['nodes'])
 	for h in skills['hashes_ex']:
 		node = cluster_jewel_nodes[str(h)]
-		yield node.get("name", ""), node['stats']
+		yield node.get('name', ''), node['stats']
 
 	for mastery_effect in skills['mastery_effects']:
 		node = masteries[int(mastery_effect) >> 16]
-		yield node['name'], node["stats"]
+		yield node['name'], node['stats']
 
 tree_dict = masteries_dict = None
 def passive_skill_tree() -> tuple[dict, dict]:
@@ -90,7 +90,7 @@ def passive_skill_tree() -> tuple[dict, dict]:
 		if 'masteryEffects' not in node:
 			continue
 		for effect in node['masteryEffects']:
-			masteries_dict[effect['effect']] = {"name": node["name"], "stats": effect['stats']}
+			masteries_dict[effect['effect']] = {'name': node['name'], 'stats': effect['stats']}
 	return tree_dict, masteries_dict
 
 matchers = [(re.compile(pattern), attr) for pattern, attr in [
@@ -115,7 +115,7 @@ def _parse_mods(stats: Stats, mods: list) -> None:
 		for regex, attr in matchers:
 			m = regex.search(mod)
 			if m:
-				if attr == "specific_aura_effect":
+				if attr == 'specific_aura_effect':
 					aura_name = m.group(1)
 					if aura_name in stats.specific_aura_effect:
 						stats.specific_aura_effect[aura_name] += int(m.group(2))
@@ -123,18 +123,18 @@ def _parse_mods(stats: Stats, mods: list) -> None:
 						stats.specific_aura_effect[aura_name] = int(m.group(2))
 					continue
 
-				if attr == "global_level":
-					stats.global_gem_level_increase += parse_gem_descriptor(m.group(2).lower(), int(m.group(1)))
+				if attr == 'global_level':
+					stats.global_gem_level_increase += parse_gem_descriptor(m.group(2), int(m.group(1)))
 					continue
 
-				if attr == "global_quality":
-					stats.global_gem_quality_increase += parse_gem_descriptor(m.group(2).lower(), int(m.group(1)))
+				if attr == 'global_quality':
+					stats.global_gem_quality_increase += parse_gem_descriptor(m.group(2), int(m.group(1)))
 					continue
 
-				if attr == "additional_notable":
+				if attr == 'additional_notable':
 					notable = m.group(1)
-					if " if you have the matching modifier on" in notable:
-						notable = notable.split(" if you have the matching modifier on")[0]
+					if ' if you have the matching modifier on' in notable:
+						notable = notable.split(' if you have the matching modifier on')[0]
 					stats.additional_notables |= {hash_for_notable(notable)}
 					continue
 
@@ -142,32 +142,33 @@ def _parse_mods(stats: Stats, mods: list) -> None:
 				setattr(stats, attr, getattr(stats, attr) + value)
 
 def parse_gem_descriptor(descriptor: str, value: int) -> list[tuple[list, int]]:
-	if descriptor == "":
+	descriptor = descriptor.lower()
+	if descriptor == '':
 		# since active skills and supports are mutually exclusive, we can increase both if no conditions are specified
-		return [(["active_skill"], value), (["support"], value)]
-	if "non-" in descriptor:  # handles vaal caress - decreases all gem levels and then sets all vaal gems back to 0
-		return [(["active_skill"], value), (["support"], value), ([descriptor[4:]], -value)]
+		return [(['active_skill'], value), (['support'], value)]
+	if 'non-' in descriptor:  # handles vaal caress - decreases all gem levels and then sets all vaal gems back to 0
+		return [(['active_skill'], value), (['support'], value), ([descriptor[4:]], -value)]
 
 	conditions = []
-	if "skill" in descriptor:
-		conditions.append("active_skill")
-	if "aoe" in descriptor:
-		conditions.append("area")
-	# this list of possible tags could be fetched directly from gems.json
-	for tag in ['mark', 'strength', 'duration', 'link', 'critical', 'chaos', 'nova', 'spell', 'trigger', 'bow',
-				'attack', 'slam', 'warcry', 'guard', 'channelling', 'travel', 'strike', 'blessing', 'low_max_level',
-				'intelligence', 'cold', 'totem', 'projectile', 'orb', 'stance', 'brand', 'dexterity', 'physical',
-				'lightning', 'fire', 'aura', 'melee', 'chaining', 'herald', 'mine', 'exceptional', 'minion', 'curse', 
-				'hex', 'movement', 'vaal', 'support', 'banner', 'golem', 'trap', 'blink', 'random_element', 'arcane']:
-		if tag in descriptor:
-			conditions.append(tag)
+	if 'skill' in descriptor:
+		conditions.append('active_skill')
+	if 'aoe' in descriptor:
+		conditions.append('area')
+
+	all_tags = frozenset([
+		'mark', 'strength', 'duration', 'link', 'critical', 'chaos', 'nova', 'spell', 'trigger', 'bow', 'attack',
+		'slam', 'warcry', 'guard', 'channelling', 'travel', 'strike', 'blessing', 'low_max_level', 'intelligence',
+		'cold', 'totem', 'projectile', 'orb', 'stance', 'brand', 'dexterity', 'physical', 'lightning', 'fire', 'aura',
+		'melee', 'chaining', 'herald', 'mine', 'exceptional', 'minion', 'curse', 'hex', 'movement', 'vaal', 'support',
+		'banner', 'golem', 'trap', 'blink', 'random_element', 'arcane'
+	])
+	conditions.extend(all_tags & set(descriptor.split()))
 	return [(conditions, value)]
 
 def hash_for_notable(notable: str) -> str:
-	global tree_dict
-	for hash, node in tree_dict["nodes"].items():
-		if hash == "root":
+	for hash, node in tree_dict['nodes'].items():
+		if hash == 'root':
 			continue
-		if node["name"] == notable:
+		if node['name'] == notable:
 			return hash
 	raise FileNotFoundError(f'Notable "{notable}" could not be found in tree')
