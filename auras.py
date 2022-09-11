@@ -137,21 +137,20 @@ class Auras:
 			aura_effect += char_stats.specific_aura_effect[gem_name]
 		gem_info = self.gem_data[gem_name]
 
-		support_comment = ''
+		support_comments = []
 		for support, support_level, support_quality, support_quality_type in supports:
 			additional_levels, additional_quality, additional_effect = self.support_aura_effect(support, support_level, support_quality, support_quality_type, gem_info)
 			aura_effect += additional_effect
 			level += additional_levels
 			quality += additional_quality
 			if additional_levels or additional_quality or additional_effect:  # only include supports that contribute
-				support_comment += f'{support} {support_level}, '
-		if support_comment:
-			support_comment = f'({support_comment[:-2]})'
+				support_comments.append(f'{support} {support_level}')
+
+		support_comment = ', '.join(support_comments)
 		mods_from_quality, effect_from_quality = self.parse_gem_quality(gem_name, quality, quality_type)
 		aura_effect += effect_from_quality
-		# support_comment = ', '.join(f'{s} {l}' for s, l, _, _ in supports)
 		special_quality = f'{quality_type.name} ' if quality_type != GemQualityType.Superior else ''
-		aura_result = [f'// {special_quality}{gem_name} (lvl {level}, {quality}%) {support_comment} {aura_effect}%']
+		aura_result = [f'// {special_quality}{gem_name} (lvl {level}, {quality}%) ({support_comment}) {aura_effect}%']
 
 		stat_values = gem_info['per_level'][str(level)]['stats']
 		gem_stats = gem_info['static']['stats'] + mods_from_quality
@@ -298,5 +297,4 @@ class Auras:
 		return additional_effects, aura_effect_increase
 
 if __name__ == '__main__':
-	# print('\n\n'.join('\n'.join(ar) for result in Auras().analyze('raylu', 'auraraylu') for ar in result))
-	print('\n\n'.join('\n'.join(ar) for result in Auras().analyze('liberatorist', 'millionsmustperish') for ar in result))
+	print('\n\n'.join('\n'.join(ar) for result in Auras().analyze('raylu', 'auraraylu') for ar in result))
