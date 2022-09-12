@@ -1,5 +1,5 @@
 import re
-from copy import copy
+from copy import copy, deepcopy
 from enum import Enum
 from typing import Union
 
@@ -17,8 +17,10 @@ class Auras:
 	def __init__(self) -> None:
 		self.gem_data, self.text = data.load()
 
-	def analyze(self, account: str, character_name: str) -> tuple[list[list[str]], list[list[str]]]:
+	def analyze(self, account: str, character_name: str, user_aura_effect: int = None) -> tuple[list[list[str]], list[list[str]]]:
 		char_stats, character, skills = stats.fetch_stats(account, character_name)
+		if user_aura_effect is not None:
+			char_stats.aura_effect = user_aura_effect
 		aura_counter = []
 
 		results = [[f'// character increased aura effect: {char_stats.aura_effect}%']]
@@ -182,6 +184,8 @@ class Auras:
 				elif not formatted.startswith('Regenerate '):
 					raise Exception(f'unhandled formatted line from {text["string"]}: {formatted}')
 				aura_result.append(formatted)
+			elif m := re.search("nearby allies' (.*)", formatted, re.IGNORECASE):
+				aura_result.append(f'Your {m.group(1)}')
 			elif formatted.startswith('Aura grants ') or formatted.startswith('Buff grants '):
 				formatted = formatted[len('Aura grants '):]
 				aura_result.append(formatted)
@@ -238,45 +242,45 @@ class Auras:
 		# TODO: champion
 		if node_name == 'Champion':
 			return [
-				'// champion',
+				'// Champion',
 				'Enemies Taunted by you take 10% increased Damage',
 				'Your Hits permanently Intimidate Enemies that are on Full Life',
 			]
 		elif node_name == 'Guardian':
 			return [
-				'// guardian',
+				'// Guardian',
 				f'+{sum(int((1 + effect/100) * 1) for effect in aura_counter)}% Physical Damage Reduction',
 				'While there are at least five nearby Allies, you and nearby Allies have Onslaught',
 			]
 		elif node_name == 'Necromancer':
 			return [
-				'// necromancer',
+				'// Necromancer',
 				f'{sum(int((1 + effect/100) * 2) for effect in aura_counter)}% increased Attack and Cast Speed',
 			]
 		elif node_name == 'Unwavering Faith':
 			return [
-				'// unwavering faith',
+				'// Unwavering Faith',
 				f'+{sum(int((1 + effect/100) * 2) for effect in aura_counter)}% Physical Damage Reduction',
 				f'{sum(round((1 + effect/100 * 0.2), 1) for effect in aura_counter)}% of Life Regenerated per second',
 			]
 		elif node_name == 'Radiant Crusade':
-			return ['// radiant crusade'] + ['Deal 10% more Damage']
+			return ['// Radiant Crusade'] + ['Deal 10% more Damage']
 		elif node_name == 'Unwavering Crusade':
 			return [
-				'// unwavering crusade',
+				'// Unwavering Crusade',
 				'20% increased Attack, Cast and Movement Speed',
 				'30% increased Area of Effect',
 			]
 		elif node_name == 'Commander of Darkness':
 			return [
-				'// commander of darkness',
+				'// Commander of Darkness',
 				f'{sum(int((1 + effect/100) * 3) for effect in aura_counter)}% increased Attack and Cast Speed',
 				'30% increased Damage',
 				'+30% to Elemental Resistances',
 			]
 		elif node_name == 'Essence Glutton':
 			return [
-				'// essence glutton',
+				'// Essence Glutton',
 				'For each nearby corpse, you and nearby Allies Regenerate 0.2% of Energy Shield per second, up to 2.0% per second',
 				'For each nearby corpse, you and nearby Allies Regenerate 5 Mana per second, up to 50 per second',
 			]
@@ -286,7 +290,7 @@ class Auras:
 		additional_effects = []
 		aura_effect_increase = 0
 		if quality > 0:
-			gem_quality_stats = gem_info['static']['quality_stats']
+			gem_quality_stats = deepcopy(gem_info['static']['quality_stats'])  # prevents overwriting of gem data
 			for stat in gem_quality_stats:
 				if stat['set'] == quality_type.value:
 					stat['value'] = int(stat['value'] * quality/1000)
