@@ -17,13 +17,15 @@ import auras
 def root(request):
 	return Response.render(request, 'index.jinja2', {})
 
-def analyze_auras(request, account, character):
+def analyze_auras(request, account, character, aura_effect=None):
 	# eventlet encodes PATH_INFO as latin1
 	# https://github.com/eventlet/eventlet/blob/890f320b/eventlet/wsgi.py#L690
 	# because PEP-0333 says so https://github.com/eventlet/eventlet/pull/497
 	account = account.encode('latin1').decode('utf-8')
 	character = character.encode('latin1').decode('utf-8')
-	results, vaal_results = aura_analyzer.analyze(account, character)
+	if aura_effect:
+		aura_effect = int(aura_effect.encode('latin1').decode('utf-8'))
+	results, vaal_results = aura_analyzer.analyze(account, character, aura_effect)
 	result_str = '\n\n'.join('\n'.join(ar) for ar in results)
 	vaal_result_str = '\n\n'.join('\n'.join(ar) for ar in vaal_results)
 	return Response.render(request, 'auras.jinja2', {
@@ -44,6 +46,7 @@ def static(request, path):
 routes = [
 	('GET', '/', root),
 	('GET', '/auras/<account>/<character>', analyze_auras),
+	('GET', '/auras/<account>/<character>/<aura_effect>', analyze_auras),
 	('GET', '/static/<path:path>', static),
 ]
 

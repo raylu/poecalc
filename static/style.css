@@ -21,6 +21,7 @@ input {
 	color: inherit;
 	border: 1px solid #222;
 	font: inherit;
+	width: 240px;
 }
 
 form#auras {
