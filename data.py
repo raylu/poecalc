@@ -36,24 +36,26 @@ def legion_passive_mapping() -> dict:
 		content_dict = json.loads(content[content.find('{'):])
 		return {node['dn']: node['sd'].values() for node in content_dict['nodes'].values()}
 
-def militant_faith_node_mapping(seed: int) -> dict:
+def militant_faith_node_mapping(seed: str) -> dict:
 	""" Maps passives nodes to their alternative nodes under militant faith"""
-	with zipfile.ZipFile(r'data\MilitantFaithSeeds.zip') as zf:
+	with zipfile.ZipFile(r'data/MilitantFaithSeeds.zip') as zf:
 		with zf.open('MilitantFaithSeeds.csv', 'r') as infile:
 			reader = csv.reader(io.TextIOWrapper(infile, 'utf-8'))
 			originals = next(reader)[2:]
-			for _ in range(seed - 1998):
-				next(reader)
-			alternatives = next(reader)[2:]
-	return {original: alternative for original, alternative in zip(originals, alternatives)}
+			for row in reader:
+				if row[0] == seed:
+					alternatives = row[2:]
+					break
+		return {original: alternative for original, alternative in zip(originals, alternatives)}
 
-def elegant_hubris_node_mapping(seed: int) -> dict:
+def elegant_hubris_node_mapping(seed: str) -> dict:
 	""" Maps passives nodes to their alternative nodes under elegant hubris"""
-	with zipfile.ZipFile(r'data\ElegantHubrisSeeds.zip') as zf:
+	with zipfile.ZipFile(r'data/ElegantHubrisSeeds.zip') as zf:
 		with zf.open('ElegantHubrisSeeds.csv', 'r') as infile:
 			reader = csv.reader(io.TextIOWrapper(infile, 'utf-8'))
 			originals = next(reader)[2:]
-			for _ in range(int(seed / 20) - 99):
-				next(reader)
-			alternatives = next(reader)[2:]
+			for row in reader:
+				if row[0] == seed:
+					alternatives = row[2:]
+					break
 	return {original: alternative for original, alternative in zip(originals, alternatives)}

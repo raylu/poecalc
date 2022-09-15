@@ -70,7 +70,7 @@ def fetch_stats(account, character_name) -> tuple[Stats, dict, dict]:
 		_parse_mods(stats, node_stats)
 
 	if militant_faith_aura_effect:
-		stats.aura_effect += int(stats.devotion/10)
+		stats.aura_effect += stats.devotion // 10
 	stats.flat_life += stats.strength // 2
 	return stats, character, skills
 
@@ -204,14 +204,15 @@ def passive_node_coordinates(node: dict, tree: dict) -> (float, float):
 	angle = math.pi * (2 * node['orbitIndex']/n_skills - 1/2)
 	return group['x'] + orbit_radius * math.cos(angle), group['y'] + orbit_radius * math.sin(angle)
 
-def notable_hash_for_jewel(jewel_index: int) -> str:
-	return [
+notable_hashes_for_jewels = [
 		'26725', '36634', '33989', '41263', '60735', '61834', '31683', '28475', '6230', '48768',
 		'34483', '7960', '46882', '55190', '61419', '2491', '54127', '32763', '26196', '33631', '21984'
-	][jewel_index]
+	]
 
 def in_radius(jewel_coordinates: tuple[float, float], passive_coordinates: tuple[float, float], radius: int) -> bool:
-	return (jewel_coordinates[0] - passive_coordinates[0]) ** 2 + (jewel_coordinates[1] - passive_coordinates[1]) ** 2 < radius ** 2
+	jewel_x, jewel_y = jewel_coordinates
+	passive_x, passive_y = passive_coordinates
+	return (jewel_x - passive_x) ** 2 + (jewel_y - passive_y) ** 2 < radius ** 2
 
 def nodes_in_radius(middle_passive: dict, radius: int, tree: dict) -> set[int]:
 	jewel_coordinates = passive_node_coordinates(middle_passive, tree)
@@ -224,11 +225,11 @@ def nodes_in_radius(middle_passive: dict, radius: int, tree: dict) -> set[int]:
 				or node.get('classStartIndex') is not None:
 			continue
 		if in_radius(jewel_coordinates, passive_node_coordinates(node, tree), radius):
-			passive_hashes |= {int(node_hash)}
+			passive_hashes.add(int(node_hash))
 	return passive_hashes
 
 def process_unnatural_instinct(jewel_data: dict, tree: dict, skill_hashes: list[int]) -> tuple[dict, list]:
-	jewel = tree['nodes'][notable_hash_for_jewel(jewel_data['x'])]
+	jewel = tree['nodes'][notable_hashes_for_jewels[jewel_data['x']]]
 	for node_hash in nodes_in_radius(jewel, 960, tree):
 		node = tree['nodes'][str(node_hash)]
 		if node.get('isNotable') or node.get('isKeystone'):
@@ -240,14 +241,14 @@ def process_unnatural_instinct(jewel_data: dict, tree: dict, skill_hashes: list[
 	return tree, skill_hashes
 
 def process_militant_faith(jewel_data: dict, tree: dict) -> dict:
-	jewel = tree['nodes'][notable_hash_for_jewel(jewel_data['x'])]
+	jewel = tree['nodes'][notable_hashes_for_jewels[jewel_data['x']]]
 	m = re.search(r'Carved to glorify (\d+) new faithful converted by High Templar (.*)', jewel_data['explicitMods'][0])
 	alt_keystone = {
 		'Avarius': 'Power of Purpose',
 		'Dominus': 'Inner Conviction',
 		'Maxarius': 'Transcendence'
 	}[m.group(2)]
-	mapping = data.militant_faith_node_mapping(int(m.group(1)))
+	mapping = data.militant_faith_node_mapping(m.group(1))
 	for node_hash in nodes_in_radius(jewel, 1800, tree):
 		node = tree['nodes'][str(node_hash)]
 		node['isConquered'] = True
@@ -268,8 +269,8 @@ def process_elegant_hubris(jewel_data: dict, tree: dict) -> dict:
 		'Caspiro': 'Supreme Ostentation',
 		'Victario': 'Supreme Grandstanding'
 	}[m.group(2)]
-	jewel = tree['nodes'][notable_hash_for_jewel(jewel_data['x'])]
-	mapping = data.elegant_hubris_node_mapping(int(m.group(1)))
+	jewel = tree['nodes'][notable_hashes_for_jewels[jewel_data['x']]]
+	mapping = data.elegant_hubris_node_mapping(m.group(1))
 	for node_hash in nodes_in_radius(jewel, 1800, tree):
 		node = tree['nodes'][str(node_hash)]
 		node['isConquered'] = True

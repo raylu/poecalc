@@ -23,8 +23,8 @@ def analyze_auras(request, account, character, aura_effect=None):
 	# because PEP-0333 says so https://github.com/eventlet/eventlet/pull/497
 	account = account.encode('latin1').decode('utf-8')
 	character = character.encode('latin1').decode('utf-8')
-	if aura_effect:
-		aura_effect = int(aura_effect.encode('latin1').decode('utf-8'))
+	if 'aura_effect' in request.query and request.query['aura_effect'] != '':
+		aura_effect = int(request.query['aura_effect'])
 	results, vaal_results = aura_analyzer.analyze(account, character, aura_effect)
 	result_str = '\n\n'.join('\n'.join(ar) for ar in results)
 	vaal_result_str = '\n\n'.join('\n'.join(ar) for ar in vaal_results)
@@ -46,7 +46,6 @@ def static(request, path):
 routes = [
 	('GET', '/', root),
 	('GET', '/auras/<account>/<character>', analyze_auras),
-	('GET', '/auras/<account>/<character>/<aura_effect>', analyze_auras),
 	('GET', '/static/<path:path>', static),
 ]
 
