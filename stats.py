@@ -12,6 +12,14 @@ class Stats:
 	flat_life: int
 	increased_life: int
 	strength: int
+	dexterity: int
+	intelligence: int
+	flat_str: int
+	flat_dex: int
+	flat_int: int
+	inc_str: int
+	inc_dex: int
+	inc_int: int
 	aura_effect: int
 	additional_notables: set
 	global_gem_level_increase: list
@@ -37,7 +45,15 @@ def fetch_stats(account, character_name) -> tuple[Stats, dict, dict]:
 	stats = Stats(
 		flat_life=38 + character['character']['level'] * 12,
 		increased_life=0,
-		strength=20,
+		strength=0,
+		dexterity=0,
+		intelligence=0,
+		flat_str=tree["classes"][character["character"]["classId"]]["base_str"],
+		flat_dex=tree["classes"][character["character"]["classId"]]["base_dex"],
+		flat_int=tree["classes"][character["character"]["classId"]]["base_int"],
+		inc_str=0,
+		inc_dex=0,
+		inc_int=0,
 		aura_effect=0,
 		additional_notables=set(),
 		global_gem_level_increase=[],
@@ -63,6 +79,8 @@ def fetch_stats(account, character_name) -> tuple[Stats, dict, dict]:
 			continue
 		_parse_item(stats, item)
 	for item in skills['items']: # jewels
+		if "Cluster Jewel" in item["typeLine"]:  # skip cluster jewel base node
+			continue
 		_parse_item(stats, item)
 	for notable_hash in stats.additional_notables:
 		skills['hashes'].append(notable_hash)
@@ -71,6 +89,10 @@ def fetch_stats(account, character_name) -> tuple[Stats, dict, dict]:
 
 	if militant_faith_aura_effect:
 		stats.aura_effect += stats.devotion // 10
+	# fun fact: this seems to be the only time when the game actually rounds to the nearest integer instead of down
+	stats.strength = round(stats.flat_str * (1 + stats.inc_str / 100))
+	stats.intelligence = round(stats.flat_int * (1 + stats.inc_int / 100))
+	stats.dexterity = round(stats.flat_dex * (1 + stats.inc_dex / 100))
 	stats.flat_life += stats.strength // 2
 	return stats, character, skills
 
@@ -117,7 +139,12 @@ def passive_skill_tree() -> tuple[dict, dict]:
 matchers = [(re.compile(pattern), attr) for pattern, attr in [
 	(r'\+(\d+) to maximum Life', 'flat_life'),
 	(r'(\d+)% increased maximum Life', 'increased_life'),
-	(r'\+(\d+) to (Strength.*|all Attributes)', 'strength'),
+	(r'(.\d+) to (Strength|.+and Strength|all Attributes)', 'flat_str'),
+	(r'(.\d+) to (Dexterity|.+and Dexterity|all Attributes)', 'flat_dex'),
+	(r'(.\d+) to (Intelligence|.+and Intelligence|all Attributes)', 'flat_int'),
+	(r'(\d+)% increased (Strength|Attributes)', 'inc_str'),
+	(r'(\d+)% increased (Dexterity|Attributes)', 'inc_dex'),
+	(r'(\d+)% increased (Intelligence|Attributes)', 'inc_int'),
 	(r'(\d+)% increased effect of Non-Curse Auras from your Skills$', 'aura_effect'),
 	(r'(.*) has (\d+)% increased Aura Effect', 'specific_aura_effect'),
 	(r'(.\d+) to Level of all (.*) Gems', 'global_level'),
@@ -127,7 +154,7 @@ matchers = [(re.compile(pattern), attr) for pattern, attr in [
 ]]
 
 def _parse_item(stats: Stats, item: dict):
-	for modlist in ['implicitMods', 'explicitMods', 'craftedMods', 'enchantMods']:
+	for modlist in ['implicitMods', 'explicitMods', 'craftedMods', 'fracturedMods', 'enchantMods']:
 		if modlist not in item:
 			continue
 		_parse_mods(stats, item[modlist])
