@@ -149,6 +149,7 @@ matchers = [(re.compile(pattern), attr) for pattern, attr in [
 	(r'(.\d+)% to Quality of all (.*) Gems', 'global_quality'),
 	(r'Allocates (.*)', 'additional_notable'),
 	(r'(.\d+) to Devotion', 'devotion'),
+	(r'Grants (.*) per (\d+)% Quality', 'alt_quality_bonus'),
 ]]
 
 def _parse_item(stats: Stats, item: dict):
@@ -184,6 +185,11 @@ def _parse_mods(stats: Stats, mods: list) -> None:
 					if ' if you have the matching modifier on' in notable:
 						notable = notable.split(' if you have the matching modifier on')[0]
 					stats.additional_notables |= {hash_for_notable(notable)}
+					continue
+
+				if attr == 'alt_quality_bonus':
+					# only accounts for 20 quality
+					_parse_mods(stats, [jewels.scale_numbers_in_string(m.group(1), 20 // int(m.group(2)))], mod_name)
 					continue
 
 				value = int(m.group(1))
