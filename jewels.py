@@ -238,7 +238,6 @@ def process_might_of_the_meek(jewel_data: dict, tree: dict, radius: int) -> dict
         node['stats'] = [scale_numbers_in_string(stat, 1.5) for stat in node['stats']]
     return tree
 
-
 def class_starting_nodes(tree, character, skills) -> set:
     for key, node in tree['nodes'].items():
         if node.get('classStartIndex') == character['character']['classId']:
@@ -276,3 +275,18 @@ def process_split_personality(jewel_data: dict, tree: dict, skills: dict, charac
     jewel_data['explicitMods'] = [scale_numbers_in_string(stat, 1 + 0.25 * (minimum_distance + additional_distance))
                                   for stat in jewel_data['explicitMods'][1:]]
     return jewel_data
+
+
+def process_abyss_jewels(item: dict):
+    mods = []
+    for jewel in item.get('socketedItems', []):
+        if not jewel.get('abyssJewel'):
+            continue
+        if item.get('name') == 'Darkness Enthroned':
+            scaling = 1.75
+        else:
+            scaling = 1
+        for mod_type in ['explicitMods', 'implicitMods', 'fracturedMods']:
+            for mod in jewel.get(mod_type, []):
+                mods.append(re.sub(r'(\d+)', lambda x: scale_effect(x.group(), scaling), mod))
+    return mods

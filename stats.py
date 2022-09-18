@@ -152,6 +152,7 @@ matchers = [(re.compile(pattern), attr) for pattern, attr in [
 ]]
 
 def _parse_item(stats: Stats, item: dict):
+	_parse_mods(stats, jewels.process_abyss_jewels(item))
 	for modlist in ['implicitMods', 'explicitMods', 'craftedMods', 'fracturedMods', 'enchantMods']:
 		if modlist not in item:
 			continue
