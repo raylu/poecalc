@@ -6,6 +6,7 @@ from copy import deepcopy
 import httpx
 import jewels
 
+
 @dataclasses.dataclass
 class Stats:
 	flat_life: int
@@ -30,8 +31,10 @@ class Stats:
 	devotion: int
 	militant_faith_aura_effect: bool
 
+
 client = httpx.Client(timeout=15)
 client.headers['User-Agent'] = 'Mozilla/5.0'
+
 
 def fetch_stats(account, character_name) -> tuple[Stats, dict, dict]:
 	params = {'accountName': account, 'character': character_name, 'realm': 'pc'}
@@ -52,9 +55,9 @@ def fetch_stats(account, character_name) -> tuple[Stats, dict, dict]:
 		strength=0,
 		dexterity=0,
 		intelligence=0,
-		flat_str=tree["classes"][character["character"]["classId"]]["base_str"],
-		flat_dex=tree["classes"][character["character"]["classId"]]["base_dex"],
-		flat_int=tree["classes"][character["character"]["classId"]]["base_int"],
+		flat_str=tree['classes'][character['character']['classId']]['base_str'],
+		flat_dex=tree['classes'][character['character']['classId']]['base_dex'],
+		flat_int=tree['classes'][character['character']['classId']]['base_int'],
 		flat_mana=34 + character['character']['level'] * 6,
 		inc_str=0,
 		inc_dex=0,
@@ -74,8 +77,8 @@ def fetch_stats(account, character_name) -> tuple[Stats, dict, dict]:
 		if item['inventoryId'] in ['Weapon2', 'Offhand2']:
 			continue
 		_parse_item(stats, item)
-	for item in skills['items']: # jewels
-		if "Cluster Jewel" in item["typeLine"]:  # skip cluster jewel base node
+	for item in skills['items']:  # jewels
+		if 'Cluster Jewel' in item['typeLine']:  # skip cluster jewel base node
 			continue
 		_parse_item(stats, item)
 	for notable_hash in stats.additional_notables:
@@ -92,6 +95,7 @@ def fetch_stats(account, character_name) -> tuple[Stats, dict, dict]:
 	stats.flat_life += stats.strength // 2
 	stats.mana = round((stats.flat_mana + stats.intelligence // 2) * (1 + stats.inc_mana / 100))
 	return stats, character, skills
+
 
 def iter_passives(tree, masteries, skills):
 	for h in skills['hashes']:
@@ -110,7 +114,10 @@ def iter_passives(tree, masteries, skills):
 		node = masteries[int(mastery_effect) >> 16]
 		yield node['name'], node['stats']
 
+
 tree_dict = masteries_dict = None
+
+
 def passive_skill_tree() -> tuple[dict, dict]:
 	global tree_dict, masteries_dict
 	if tree_dict is not None:
@@ -132,6 +139,7 @@ def passive_skill_tree() -> tuple[dict, dict]:
 			masteries_dict[effect['effect']] = {'name': node['name'], 'stats': effect['stats']}
 	return deepcopy(tree_dict), masteries_dict
 
+
 matchers = [(re.compile(pattern), attr) for pattern, attr in [
 	(r'\+(\d+) to maximum Life', 'flat_life'),
 	(r'(\d+)% increased maximum Life', 'increased_life'),
@@ -152,12 +160,14 @@ matchers = [(re.compile(pattern), attr) for pattern, attr in [
 	(r'Grants (.*) per (\d+)% Quality', 'alt_quality_bonus'),
 ]]
 
+
 def _parse_item(stats: Stats, item: dict):
 	_parse_mods(stats, jewels.process_abyss_jewels(item))
 	for modlist in ['implicitMods', 'explicitMods', 'craftedMods', 'fracturedMods', 'enchantMods']:
 		if modlist not in item:
 			continue
 		_parse_mods(stats, item[modlist])
+
 
 def _parse_mods(stats: Stats, mods: list) -> None:
 	for mod in mods:
@@ -189,11 +199,12 @@ def _parse_mods(stats: Stats, mods: list) -> None:
 
 				if attr == 'alt_quality_bonus':
 					# only accounts for 20 quality
-					_parse_mods(stats, [jewels.scale_numbers_in_string(m.group(1), 20 // int(m.group(2)))], mod_name)
+					_parse_mods(stats, [jewels.scale_numbers_in_string(m.group(1), 20 // int(m.group(2)))])
 					continue
 
 				value = int(m.group(1))
 				setattr(stats, attr, getattr(stats, attr) + value)
+
 
 def parse_gem_descriptor(descriptor: str, value: int) -> list[tuple[list, int]]:
 	descriptor = descriptor.lower()
@@ -219,6 +230,7 @@ def parse_gem_descriptor(descriptor: str, value: int) -> list[tuple[list, int]]:
 	conditions.extend(all_tags & set(descriptor.split()))
 	return [(conditions, value)]
 
+
 def hash_for_notable(notable: str) -> str:
 	for hash, node in tree_dict['nodes'].items():
 		if hash == 'root':
@@ -226,4 +238,3 @@ def hash_for_notable(notable: str) -> str:
 		if node['name'] == notable:
 			return hash
 	raise FileNotFoundError(f'Notable "{notable}" could not be found in tree')
-
