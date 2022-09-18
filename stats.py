@@ -13,12 +13,15 @@ class Stats:
 	strength: int
 	dexterity: int
 	intelligence: int
+	mana: int
 	flat_str: int
 	flat_dex: int
 	flat_int: int
+	flat_mana: int
 	inc_str: int
 	inc_dex: int
 	inc_int: int
+	inc_mana: int
 	aura_effect: int
 	additional_notables: set
 	global_gem_level_increase: list
@@ -45,15 +48,18 @@ def fetch_stats(account, character_name) -> tuple[Stats, dict, dict]:
 	stats = Stats(
 		flat_life=38 + character['character']['level'] * 12,
 		increased_life=0,
+		mana=0,
 		strength=0,
 		dexterity=0,
 		intelligence=0,
 		flat_str=tree["classes"][character["character"]["classId"]]["base_str"],
 		flat_dex=tree["classes"][character["character"]["classId"]]["base_dex"],
 		flat_int=tree["classes"][character["character"]["classId"]]["base_int"],
+		flat_mana=34 + character['character']['level'] * 6,
 		inc_str=0,
 		inc_dex=0,
 		inc_int=0,
+		inc_mana=0,
 		aura_effect=0,
 		additional_notables=set(),
 		global_gem_level_increase=[],
@@ -132,9 +138,11 @@ matchers = [(re.compile(pattern), attr) for pattern, attr in [
 	(r'(.\d+) to (Strength|.+and Strength|all Attributes)', 'flat_str'),
 	(r'(.\d+) to (Dexterity|.+and Dexterity|all Attributes)', 'flat_dex'),
 	(r'(.\d+) to (Intelligence|.+and Intelligence|all Attributes)', 'flat_int'),
+	(r'^(.\d+) to (m|M)aximum Mana', 'flat_mana'),
 	(r'(\d+)% increased (Strength|Attributes)', 'inc_str'),
 	(r'(\d+)% increased (Dexterity|Attributes)', 'inc_dex'),
 	(r'(\d+)% increased (Intelligence|Attributes)', 'inc_int'),
+	(r'(\d+)% increased maximum Mana$', 'inc_mana'),
 	(r'(\d+)% increased effect of Non-Curse Auras from your Skills$', 'aura_effect'),
 	(r'(.*) has (\d+)% increased Aura Effect', 'specific_aura_effect'),
 	(r'(.\d+) to Level of all (.*) Gems', 'global_level'),

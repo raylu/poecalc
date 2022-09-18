@@ -38,7 +38,7 @@ class Auras:
 
 		tree, masteries = stats.passive_skill_tree()
 		for node_name, node_stats in stats.iter_passives(tree, masteries, skills):
-			if ascendancy_result := self.ascendancy_mod(aura_counter, node_name):
+			if ascendancy_result := self.ascendancy_mod(aura_counter, char_stats, node_name):
 				results.append(ascendancy_result)
 
 		for item in character["items"]:
@@ -248,7 +248,7 @@ class Auras:
 			value = int(value)
 		return value
 
-	def ascendancy_mod(self, aura_counter: list[int], node_name: str) -> list[str]:
+	def ascendancy_mod(self, aura_counter: list[int], character_stats: stats.Stats, node_name: str) -> list[str]:
 		# TODO: champion
 		if node_name == 'Champion':
 			return [
@@ -270,16 +270,28 @@ class Auras:
 		elif node_name == 'Unwavering Faith':
 			return [
 				'// Unwavering Faith',
-				f'+{sum(int((1 + effect/100) * 2) for effect in aura_counter)}% Physical Damage Reduction',
-				f'{sum(round((1 + effect/100 * 0.2), 1) for effect in aura_counter)}% of Life Regenerated per second',
+				f'+{sum(int((1 + effect/100) * 1) for effect in aura_counter)}% Physical Damage Reduction',
+				f'{sum(round((1 + effect/100) * 0.2, 1) for effect in aura_counter)}% of Life Regenerated per second',
 			]
 		elif node_name == 'Radiant Crusade':
-			return ['// Radiant Crusade'] + ['Deal 10% more Damage']
+			return [
+				'// Radiant Crusade',
+				'Deal 10% more Damage',
+				'While there are at least five nearby Allies, you and nearby Allies have Onslaught'
+			]
+		elif node_name == 'Radiant Faith':
+			# todo: take unreserved mana into account
+			return [
+				f'// Radiant Faith ({character_stats.mana} Mana, all reserved)',
+				f'{character_stats.mana // 10} additional Energy Shield'
+			]
 		elif node_name == 'Unwavering Crusade':
 			return [
 				'// Unwavering Crusade',
 				'20% increased Attack, Cast and Movement Speed',
 				'30% increased Area of Effect',
+				'Nearby Enemies are Unnerved',
+				'Nearby Enemies are Intimidated',
 			]
 		elif node_name == 'Commander of Darkness':
 			return [
