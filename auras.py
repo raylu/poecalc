@@ -6,6 +6,7 @@ from typing import Union
 import data
 import stats
 
+
 class GemQualityType(Enum):
 	Superior = 0
 	Anomalous = 1
@@ -41,7 +42,7 @@ class Auras:
 			if ascendancy_result := self.ascendancy_mod(aura_counter, char_stats, node_name):
 				results.append(ascendancy_result)
 
-		for item in character["items"]:
+		for item in character['items']:
 			if item['inventoryId'] in ['Weapon2', 'Offhand2']:
 				continue
 			if item_result := self.item_aura(item, char_stats, aura_counter):
@@ -94,7 +95,7 @@ class Auras:
 				yield name, level, quality, quality_type, supports
 
 			if item_skill is not None:
-				all_supports = [self.parse_gem(gem, level_mods, quality_mods) for gem in item['socketedItems'] if gem.get('support')]
+				all_supports = [self.parse_gem(gem, level_mods, quality_mods) for gem in item.get('socketedItems', []) if gem.get('support')]
 				yield item_skill[0], item_skill[1], item_skill[2], item_skill[3], all_supports
 
 	def parse_gem(self, gem: dict, level_mods: list, quality_mods: list, vaal=False) -> (str, int, int, GemQualityType):
@@ -136,11 +137,11 @@ class Auras:
 		group = item['sockets'][socket_idx]['group']
 		linked_sockets = [i for i, socket in enumerate(item['sockets']) if socket['group'] == group]
 		for gem in item['socketedItems']:
-			if gem['support'] and gem['socket'] in linked_sockets:
+			if gem.get('support') and gem.get('socket') in linked_sockets:
 				yield self.parse_gem(gem, level_mods, quality_mods)
 
 	def aura_mod(self, char_stats: stats.Stats, gem_name: str, level: int, quality: int, quality_type: GemQualityType, supports: list) -> tuple[list[str], list[int]]:
-		if "Aspect" in gem_name:
+		if 'Aspect' in gem_name:
 			# todo: handle aspect skills
 			return [], []
 
@@ -311,26 +312,26 @@ class Auras:
 		aura_string = []
 		for modlist in ['implicitMods', 'explicitMods', 'craftedMods', 'fracturedMods', 'enchantMods']:
 			for mod in item.get(modlist, []):
-				if m := re.search(r"Nearby Allies have (|\+)(\d+)% (.*) per 100 (.*) you have", mod, re.IGNORECASE):
+				if m := re.search(r'Nearby Allies have (|\+)(\d+)% (.*) per 100 (.*) you have', mod, re.IGNORECASE):
 					# mask of the tribunal
 					value = int(m.group(2)) * getattr(character_stats, m.group(4).lower(), 0) // 100
 					aura_string.append(f'{m.group(1) if m.group(1) else ""}{value}% {m.group(3)}')
-				elif m := re.search(r"Auras from your Skills grant (|\+)(\d+)(.*) to you and Allies", mod, re.IGNORECASE):
+				elif m := re.search(r'Auras from your Skills grant (|\+)(\d+)(.*) to you and Allies', mod, re.IGNORECASE):
 					# i.e. redeemer weapon mod
 					value = sum(int((1 + effect/100) * int(m.group(2))) for effect in aura_counter)
 					aura_string.append(f'{m.group(1) if m.group(1) else ""}{value}{m.group(3)}')
 				elif m := re.search(r"Nearby Allies' (.*)", mod, re.IGNORECASE):
 					# i.e. perquil's toe, garb of the ephemeral etc.
 					aura_string.append(f'Your {m.group(1)}')
-				elif m := re.search(r"Hits against Nearby Enemies have (.*)", mod, re.IGNORECASE):
+				elif m := re.search(r'Hits against Nearby Enemies have (.*)', mod, re.IGNORECASE):
 					# i.e. aul's uprising etc.
 					aura_string.append(f'{m.group(1)} with Hits')  # doesn't get recognized by pob if not in this form
 
 				# Generic mods
-				elif "Nearby Enemies" in mod:
-					# i.e. -% res mods on helmets "Nearby Enemies have -X% to Y Resistance"
+				elif 'Nearby Enemies' in mod:
+					# i.e. -% res mods on helmets 'Nearby Enemies have -X% to Y Resistance'
 					aura_string.append(mod)
-				elif m := re.search(r"nearby allies (have|gain) (.*)", mod, re.IGNORECASE):
+				elif m := re.search(r'nearby allies (have|gain) (.*)', mod, re.IGNORECASE):
 					# i.e. leer cast, dying breath etc.
 					# todo: crown of the tyrant
 					aura_string.append(m.group(2))
@@ -352,6 +353,7 @@ class Auras:
 					elif stat['id'] in ['aura_effect_+%', 'defiance_banner_aura_effect_+%', 'non_curse_aura_effect_+%']:
 						aura_effect_increase += stat['value']
 		return additional_effects, aura_effect_increase
+
 
 if __name__ == '__main__':
 	print('\n\n'.join('\n'.join(ar) for result in Auras().analyze('raylu', 'auraraylu') for ar in result))
