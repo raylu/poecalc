@@ -4,6 +4,7 @@ import re
 from copy import deepcopy
 
 import httpx
+import gems
 import jewels
 
 
@@ -146,7 +147,7 @@ matchers = [(re.compile(pattern), attr) for pattern, attr in [
 	(r'(.\d+) to (Strength|.+and Strength|all Attributes)', 'flat_str'),
 	(r'(.\d+) to (Dexterity|.+and Dexterity|all Attributes)', 'flat_dex'),
 	(r'(.\d+) to (Intelligence|.+and Intelligence|all Attributes)', 'flat_int'),
-	(r'^(.\d+) to (m|M)aximum Mana', 'flat_mana'),
+	(r'^(.\d+) to [Mm]aximum Mana', 'flat_mana'),
 	(r'(\d+)% increased (Strength|Attributes)', 'inc_str'),
 	(r'(\d+)% increased (Dexterity|Attributes)', 'inc_dex'),
 	(r'(\d+)% increased (Intelligence|Attributes)', 'inc_int'),
@@ -183,11 +184,11 @@ def _parse_mods(stats: Stats, mods: list) -> None:
 					continue
 
 				if attr == 'global_level':
-					stats.global_gem_level_increase += parse_gem_descriptor(m.group(2), int(m.group(1)))
+					stats.global_gem_level_increase += gems.parse_gem_descriptor(m.group(2), int(m.group(1)))
 					continue
 
 				if attr == 'global_quality':
-					stats.global_gem_quality_increase += parse_gem_descriptor(m.group(2), int(m.group(1)))
+					stats.global_gem_quality_increase += gems.parse_gem_descriptor(m.group(2), int(m.group(1)))
 					continue
 
 				if attr == 'additional_notable':
@@ -198,37 +199,12 @@ def _parse_mods(stats: Stats, mods: list) -> None:
 					continue
 
 				if attr == 'alt_quality_bonus':
-					# only accounts for 20 quality
+					# TODO: handle quality % on item
 					_parse_mods(stats, [jewels.scale_numbers_in_string(m.group(1), 20 // int(m.group(2)))])
 					continue
 
 				value = int(m.group(1))
 				setattr(stats, attr, getattr(stats, attr) + value)
-
-
-def parse_gem_descriptor(descriptor: str, value: int) -> list[tuple[list, int]]:
-	descriptor = descriptor.lower()
-	if descriptor == '':
-		# since active skills and supports are mutually exclusive, we can increase both if no conditions are specified
-		return [(['active_skill'], value), (['support'], value)]
-	if 'non-' in descriptor:  # handles vaal caress - decreases all gem levels and then sets all vaal gems back to 0
-		return [(['active_skill'], value), (['support'], value), ([descriptor[4:]], -value)]
-
-	conditions = []
-	if 'skill' in descriptor:
-		conditions.append('active_skill')
-	if 'aoe' in descriptor:
-		conditions.append('area')
-
-	all_tags = frozenset([
-		'mark', 'strength', 'duration', 'link', 'critical', 'chaos', 'nova', 'spell', 'trigger', 'bow', 'attack',
-		'slam', 'warcry', 'guard', 'channelling', 'travel', 'strike', 'blessing', 'low_max_level', 'intelligence',
-		'cold', 'totem', 'projectile', 'orb', 'stance', 'brand', 'dexterity', 'physical', 'lightning', 'fire', 'aura',
-		'melee', 'chaining', 'herald', 'mine', 'exceptional', 'minion', 'curse', 'hex', 'movement', 'vaal', 'support',
-		'banner', 'golem', 'trap', 'blink', 'random_element', 'arcane'
-	])
-	conditions.extend(all_tags & set(descriptor.split()))
-	return [(conditions, value)]
 
 
 def hash_for_notable(notable: str) -> str:
