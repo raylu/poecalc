@@ -26,7 +26,7 @@ def analyze_auras(request, account, character, aura_effect=None):
 	if 'aura_effect' in request.query and request.query['aura_effect'] != '':
 		aura_effect = int(request.query['aura_effect'])
 	results, vaal_results = aura_analyzer.analyze(account, character, aura_effect)
-	result_str = '\n\n'.join('\n'.join(ar) for ar in results)
+	result_str = '\n\n'.join('\n'.join(ar) for ar in results if ar != [])
 	vaal_result_str = '\n\n'.join('\n'.join(ar) for ar in vaal_results)
 	return Response.render(request, 'auras.jinja2', {
 		'results': result_str,

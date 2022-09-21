@@ -4,7 +4,7 @@ import re
 import zipfile
 import io
 
-def load() -> tuple[dict[str, dict], dict[str, str]]:
+def load() -> tuple[dict[str, dict], dict]:
 	with open('data/gems.json', 'rb') as f:
 		raw_gems: dict[str, dict] = json.load(f)
 	gems: dict[str, dict] = {}

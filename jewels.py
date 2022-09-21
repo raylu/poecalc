@@ -16,7 +16,7 @@ notable_hashes_for_jewels = [
 class TreeGraph:
     """This class is used to determine the shortest paths between two passive skills in a given passive tree"""
     def __init__(self, tree, skills):
-        # skills['hashes'] can contain hashes that are not part of the tree (cluster notables
+        # skills['hashes'] can contain hashes that are not part of the tree (cluster notables)
         self.node_hashes = {str(hash) for hash in skills['hashes']} & \
                            set(node_hash for node_hash in tree['nodes'] if node_hash != 'root')
         self.tree = tree
@@ -39,19 +39,18 @@ class TreeGraph:
     def bfs(self, start_node_hash, target_node_hash):
         start_node = self.id_for_hash[start_node_hash]
         target_node = self.id_for_hash[target_node_hash]
-        queue = Queue()
-        queue.put(start_node)
+        queue = [start_node]
         visited = {start_node}
         parent = dict()
         parent[start_node] = None
         path_found = False
-        while not queue.empty():
-            current_node = queue.get()
+        while queue:
+            current_node = queue.pop(0)
             if current_node == target_node:
                 path_found = True
                 break
             for next_node in self.adjacency_list[current_node] - visited:
-                queue.put(next_node)
+                queue.append(next_node)
                 parent[next_node] = current_node
                 visited.add(next_node)
         if not path_found:
