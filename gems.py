@@ -31,7 +31,8 @@ class Skill:
         self.quality = 0
         self.socketed = socketed
         gem_data = self.get_gem_data()
-        self.tags = {gem_tag.lower() for gem_tag in (gem_data['tags'] if gem_data['tags'] else [] + gem_data.get('types', []))}
+        self.tags = {gem_tag.lower() for gem_tag in
+                     (gem_data['tags'] if gem_data['tags'] else [] + gem_data.get('types', []))}
 
         for prop in skill_dict['properties']:
             if prop['name'] == 'Level':
@@ -95,8 +96,8 @@ class SupportSkill(Skill):
         if self.support_gems_only and not active_skill_gem.socketed:
             return False
         if self.allowed_types:
-            if "and" in self.allowed_types:
-                if not all(allowed in active_skill_gem.tags for allowed in self.allowed_types if allowed != "and"):
+            if 'and' in self.allowed_types:
+                if not all(allowed in active_skill_gem.tags for allowed in self.allowed_types if allowed != 'and'):
                     return False
             elif len(self.allowed_types & active_skill_gem.tags) == 0:
                 return False
@@ -132,10 +133,10 @@ class ActiveSkill(Skill):
     def get_curse_effect(self):
         inc = 0
         more = 0
-        if "curse" in self.tags:
+        if 'curse' in self.tags:
             inc += self.inc_curse_effect
             more += self.more_curse_effect
-        if "hex" in self.tags:
+        if 'hex' in self.tags:
             more += self.more_hex_effect
         return round(((1 + inc / 100) * (1 + more / 100) - 1) * 100)
 
@@ -151,10 +152,10 @@ class ActiveSkill(Skill):
             return []
         quality_effect = gem_data['static']['quality_stats'][self.quality_type.value]
         quality_effect_value = int(quality_effect['value'] * self.quality / 1000)
-        if quality_effect["id"] == "aura_effect_+%":
+        if quality_effect['id'] == 'aura_effect_+%':
             self.aura_effect += quality_effect_value
             return []
-        if quality_effect["id"] == "curse_effect_+%":
+        if quality_effect['id'] == 'curse_effect_+%':
             self.inc_curse_effect += quality_effect_value
             return []
         return [(quality_effect['id'], quality_effect_value)]
@@ -190,7 +191,8 @@ class ActiveSkill(Skill):
         aura_result = []
         previous_value = None
         for stat, value in self.iterate_effects(get_vaal_effect):
-            formatted_text, previous_value = self.translate_effect(stat, value, previous_value, self.aura_effect, aura_translation)
+            formatted_text, previous_value = self.translate_effect(stat, value, previous_value, self.aura_effect,
+                                                                   aura_translation)
             if not formatted_text:
                 continue
             if m := re.search('you and nearby allies( deal| have| gain| are|) (.*)', formatted_text, re.IGNORECASE):
@@ -220,10 +222,11 @@ class ActiveSkill(Skill):
         curse_result = []
         previous_value = None
         for stat, value in self.iterate_effects():
-            formatted_text, previous_value = self.translate_effect(stat, value, previous_value, self.get_curse_effect(), curse_translation)
+            formatted_text, previous_value = self.translate_effect(stat, value, previous_value, self.get_curse_effect(),
+                                                                   curse_translation)
             if not formatted_text:
                 continue
-            if m := re.search('Other effects on Cursed enemies expire (\d+)% slower', formatted_text):
+            if m := re.search(r'Other effects on Cursed enemies expire (\d+)% slower', formatted_text):
                 # ailments are a subsection of "effects", but the only ones that matter
                 # this would be inaccurate if there are other "more ailment duration" mods, but they are nonexistent
                 curse_result.append(f'{m.group(1)}% more Duration of Ailments')
@@ -234,7 +237,8 @@ class ActiveSkill(Skill):
                 curse_result.append(formatted_text.replace('against Cursed Enemies', ''))
             elif m := re.search(r'Cursed enemies grant (\d+) (Life|Mana) when Hit by (Attacks|Spells)', formatted_text):
                 curse_result.append(f'+{m.group(1)} {m.group(2)} gained for each Enemy hit by your {m.group(3)}')
-            elif m := re.search(r'Cursed Enemies grant (.*)% (Life|Mana) Leech when Hit by (Attack|Spell)s', formatted_text, re.IGNORECASE):
+            elif m := re.search(r'Cursed Enemies grant (.*)% (Life|Mana) Leech when Hit by (Attack|Spell)s',
+                                formatted_text, re.IGNORECASE):
                 curse_result.append(f'{m.group(1)}% of {m.group(3)} Damage leeched as {m.group(2)}')
             elif m := re.search(r'Cursed enemies grant (\d+) (Life|Mana) when Killed', formatted_text):
                 curse_result.append(f'+{m.group(1)} {m.group(2)} gained on kill')
@@ -242,11 +246,13 @@ class ActiveSkill(Skill):
                 curse_result.append(m.group(1))
             elif m := re.search('Ailments inflicted on Cursed Enemies (.*)', formatted_text):
                 curse_result.append(f'Damaging Ailments {m.group(1)}')
-            elif m := re.search(r'Cursed enemies take (\d+)% increased Damage from Damage over Time effects', formatted_text):
+            elif m := re.search(r'Cursed enemies take (\d+)% increased Damage from Damage over Time effects',
+                                formatted_text):
                 curse_result.append(f'Nearby Enemies have {m.group(1)}% increased Damage over Time taken')
             elif m := re.search(r'Cursed enemies take (\d+)% increased Damage from Projectile Hits', formatted_text):
                 curse_result.append(f'Nearby Enemies take {m.group(1)}% increased Projectile Damage')
-            elif m := re.search(r'(Ignite|Freeze|Shock)(|s) on Cursed enemies (have|has) (\d+)% increased Duration', formatted_text):
+            elif m := re.search(r'(Ignite|Freeze|Shock)(|s) on Cursed enemies (have|has) (\d+)% increased Duration',
+                                formatted_text):
                 curse_result.append(f'{m.group(4)}% increased {m.group(1)} Duration on Enemies')
             elif any(substr in formatted_text.lower() for substr in ['split', 'charge', 'overkill']):
                 # not recognised by pob at all
@@ -262,16 +268,16 @@ class ActiveSkill(Skill):
             support_comment = ''
         name = self.name
         special_quality = f'{self.quality_type.name} ' if self.quality_type != GemQualityType.Superior else ''
-        header = f'// {special_quality}{name} (lvl {self.level}, {self.quality}%) {support_comment} {self.get_curse_effect()}%'
+        header = f'// {special_quality}{name} (lvl {self.level}, {self.quality}%) ' \
+                 f'{support_comment} {self.get_curse_effect()}%'
         return [header] + curse_result
 
     @staticmethod
-    def translate_effect(effect_id, effect_value, previous_effect_value, scaling_factor, translation):
+    def translate_effect(effect_id, effect_value, previous_effect_value, scaling_factor, translation_dict):
         """Finds the correct translation for an effect depending on the effects value"""
-        if effect_id not in translation:
+        if effect_id not in translation_dict:
             return '', None
-
-        for translation in translation[effect_id]:
+        for translation in translation_dict[effect_id]:
             condition = translation['condition'][0]
             if condition == {} or condition.get('max', math.inf) >= effect_value >= condition.get('min', -math.inf):
                 break
@@ -279,15 +285,15 @@ class ActiveSkill(Skill):
             if effect_value == 0:
                 return '', None
             raise Exception(
-                f'Could not find the right translation for {effect_value} (value: {effect_value}) in {translation[effect_id]}')
+                f'Could not find the right translation for '
+                f'{effect_value} (value: {effect_value}) in {translation_dict[effect_id]}')
 
         value = scaled_value(effect_value, scaling_factor, translation['index_handlers'][0])
-        if len(translation['format']) > 1:
-            if previous_effect_value is not None:
-                return translation['string'].format(previous_effect_value, value), None
-            else:
-                return '', value
-        return translation['string'].format(value), None
+        if len(translation['format']) == 1:
+            return translation['string'].format(value), None
+        if previous_effect_value is not None:
+            return translation['string'].format(previous_effect_value, value), None
+        return '', value
 
 
 def item_gem_dict(mod_string: str) -> dict:
@@ -316,13 +322,13 @@ def scaled_value(value: int, factor: int, index_handlers: list[str]) -> Union[in
         if handler == 'per_minute_to_per_second':
             value /= 60
             allow_float = True
-        elif handler == "milliseconds_to_seconds_2dp":
+        elif handler == 'milliseconds_to_seconds_2dp':
             value /= 1000
             allow_float = True
-        elif handler == "negate":
+        elif handler == 'negate':
             value *= -1
             continue
-        elif handler == "divide_by_one_hundred":
+        elif handler == 'divide_by_one_hundred':
             value /= 100
             allow_float = True
         else:

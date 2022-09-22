@@ -1,6 +1,5 @@
 import math
 import re
-from queue import Queue
 import data
 
 legion_passive_effects = data.legion_passive_mapping()
@@ -237,10 +236,12 @@ def process_might_of_the_meek(jewel_data: dict, tree: dict, radius: int) -> dict
         node['stats'] = [scale_numbers_in_string(stat, 1.5) for stat in node['stats']]
     return tree
 
+
 def class_starting_nodes(tree, character, skills) -> set:
-    for key, node in tree['nodes'].items():
+    for node in tree['nodes'].values():
         if node.get('classStartIndex') == character['character']['classId']:
             return {str(h) for h in skills['hashes']} & (set(node['in']) | set(node['out']))
+    return set()
 
 
 def get_cluster_root(jewel_hash, tree) -> tuple[str, int]:
@@ -287,5 +288,5 @@ def process_abyss_jewels(item: dict):
             scaling = 1
         for mod_type in ['explicitMods', 'implicitMods', 'fracturedMods']:
             for mod in jewel.get(mod_type, []):
-                mods.append(re.sub(r'(\d+)', lambda x: scale_effect(x.group(), scaling), mod))
+                mods.append(re.sub(r'(\d+)', lambda x, sc=scaling: scale_effect(x.group(), sc), mod))
     return mods
