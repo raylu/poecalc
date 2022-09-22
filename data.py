@@ -4,16 +4,19 @@ import re
 import zipfile
 import io
 
-def load() -> tuple[dict[str, dict], dict]:
+def load() -> tuple[dict[str, dict], dict, dict]:
 	with open('data/gems.json', 'rb') as f:
 		raw_gems: dict[str, dict] = json.load(f)
 	gems: dict[str, dict] = {}
 	for k, v in raw_gems.items():
-		if k.endswith('Royale') or v['base_item'] is None:
+		if k.endswith('Royale') or k.endswith('Triggered') or k.startswith('New'):
 			continue
-		gems[v['base_item']['display_name']] = v
+		if v["base_item"]:
+			gems[v['base_item']['display_name']] = v
+		elif 'active_skill' in v:  # skills that are exclusive to items
+			gems[v['active_skill']['display_name']] = v
 
-	text: dict[str, str] = {}
+	aura_translation: dict[str, str] = {}
 	with open('data/aura_skill.json', 'rb') as f:
 		raw_text: list[dict] = json.load(f)
 	prefixes = ['You and nearby', 'Your and nearby', 'Aura grants', 'Buff grants']
@@ -21,9 +24,19 @@ def load() -> tuple[dict[str, dict], dict]:
 		for k in translation['ids']:
 			translated = translation['English'][0]
 			if any(translated['string'].startswith(prefix + ' ') for prefix in prefixes):
-				text[k] = translated
+				aura_translation[k] = translation['English']
 
-	return gems, text
+	curse_translation: dict[str, str] = {}
+	with open('data/curse_skill.json', 'rb') as f:
+		raw_text: list[dict] = json.load(f)
+		identifiers = ["cursed enemies", "cursed rare"]
+		for translation in raw_text:
+			for k in translation['ids']:
+				translated = translation['English'][0]
+				if any(identifier in translated["string"].lower() for identifier in identifiers):
+					curse_translation[k] = translation['English']
+
+	return gems, aura_translation, curse_translation
 
 def legion_passive_mapping() -> dict:
 	""" Maps names of timeless legion passives to their effects """
