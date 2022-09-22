@@ -30,6 +30,7 @@ class Stats:
 	aura_effect: int = 0
 	inc_curse_effect: int = 0
 	more_curse_effect: int = 0
+	more_hex_effect: int = 0
 	additional_notables: set[str] = field(default_factory=set)
 	global_gem_level_increase: list[tuple[set, int]] = field(default_factory=list)
 	global_gem_quality_increase: list[tuple[set, int]] = field(default_factory=list)

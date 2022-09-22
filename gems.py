@@ -108,6 +108,7 @@ class ActiveSkill(Skill):
     aura_effect: int
     inc_curse_effect: int
     more_curse_effect: int
+    more_hex_effect: int
     supports: list
 
     def __init__(self, gem_dict: dict, socketed: bool) -> None:
@@ -115,17 +116,26 @@ class ActiveSkill(Skill):
         self.aura_effect = 0
         self.inc_curse_effect = 0
         self.more_curse_effect = 0
+        self.more_hex_effect = 0
         self.supports = []
         self.tags |= {gem_type.lower() for gem_type in self.get_gem_data()['active_skill']['types']}
         self.tags.add(self.name.lower())
 
     def get_curse_effect(self):
-        return round(((1 + self.inc_curse_effect / 100) * (1 + self.more_curse_effect / 100) - 1) * 100)
+        inc = 0
+        more = 0
+        if "curse" in self.tags:
+            inc += self.inc_curse_effect
+            more += self.more_curse_effect
+        if "hex" in self.tags:
+            more += self.more_hex_effect
+        return round(((1 + inc / 100) * (1 + more / 100) - 1) * 100)
 
     def add_effects(self, character_stats) -> None:
         self.aura_effect += character_stats.aura_effect + character_stats.specific_aura_effect[self.name]
         self.inc_curse_effect += character_stats.inc_curse_effect + character_stats.specific_curse_effect[self.name]
         self.more_curse_effect += character_stats.more_curse_effect
+        self.more_hex_effect += character_stats.more_hex_effect
 
     def quality_effect(self) -> list:
         gem_data = self.get_gem_data(False)
