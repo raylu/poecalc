@@ -17,6 +17,7 @@ class GemQualityType(Enum):
 
 class Skill:
     name: str
+    original_name: str
     level: int
     quality: int
     socketed: bool
@@ -25,6 +26,7 @@ class Skill:
 
     def __init__(self, skill_dict: dict, socketed: bool) -> None:
         self.name = skill_dict['baseType']
+        self.original_name = self.name
         self.level = 1
         self.quality = 0
         self.socketed = socketed
@@ -57,6 +59,8 @@ class Skill:
         effects = []
         gem_data = self.get_gem_data(get_vaal_effect)
         for stat, value in zip(gem_data['static']['stats'], gem_data['per_level'][str(self.level)].get('stats', [])):
+            if stat is None:  # catching some weird corrupted data (rage support)
+                continue
             if value is None:
                 value = stat.get('value')
             else:
@@ -67,7 +71,7 @@ class Skill:
 
     def get_gem_data(self, get_vaal_effect: bool = True) -> dict:
         if self.name.startswith('Vaal') and not get_vaal_effect:
-            return all_gems[self.name[5:]]
+            return all_gems[self.original_name]
         return all_gems[self.name]
 
     def quality_effect(self) -> list:
@@ -100,6 +104,8 @@ class SupportSkill(Skill):
 
     def quality_effect(self) -> list:
         gem_data = self.get_gem_data()
+        if not gem_data['static']['quality_stats']:
+            return []
         quality_effect = gem_data['static']['quality_stats'][self.quality_type.value]
         return [(quality_effect['id'], int(quality_effect['value'] * self.quality / 1000))]
 
@@ -113,6 +119,8 @@ class ActiveSkill(Skill):
 
     def __init__(self, gem_dict: dict, socketed: bool) -> None:
         super().__init__(gem_dict, socketed)
+        if 'hybrid' in gem_dict:
+            self.original_name = gem_dict['hybrid']['baseTypeName']
         self.aura_effect = 0
         self.inc_curse_effect = 0
         self.more_curse_effect = 0
@@ -139,6 +147,8 @@ class ActiveSkill(Skill):
 
     def quality_effect(self) -> list:
         gem_data = self.get_gem_data(False)
+        if not gem_data['static']['quality_stats']:
+            return []
         quality_effect = gem_data['static']['quality_stats'][self.quality_type.value]
         quality_effect_value = int(quality_effect['value'] * self.quality / 1000)
         if quality_effect["id"] == "aura_effect_+%":
@@ -164,7 +174,7 @@ class ActiveSkill(Skill):
                 elif stat == 'aura_effect_+%':
                     self.aura_effect += value
                     self.inc_curse_effect += value  # Arrogance + Blasphemy
-                elif stat == 'supported_aura_skill_gem_level_+':
+                elif stat in ['supported_aura_skill_gem_level_+', 'supported_active_skill_gem_level_+']:
                     self.level += value
                 elif stat == 'supported_active_skill_gem_quality_%':
                     self.quality += value
@@ -180,20 +190,9 @@ class ActiveSkill(Skill):
         aura_result = []
         previous_value = None
         for stat, value in self.iterate_effects(get_vaal_effect):
-            if stat not in aura_translation:
+            formatted_text, previous_value = self.translate_effect(stat, value, previous_value, self.aura_effect, aura_translation)
+            if not formatted_text:
                 continue
-            translation = aura_translation[stat][0 if value > 0 else 1]
-            value = scaled_value(value, self.aura_effect, translation['index_handlers'][0])
-            if len(translation['format']) > 1:
-                if previous_value is not None:
-                    formatted_text = translation['string'].format(previous_value, value)
-                    previous_value = None
-                else:
-                    previous_value = value
-                    continue
-            else:
-                formatted_text = translation['string'].format(value)
-
             if m := re.search('you and nearby allies( deal| have| gain| are|) (.*)', formatted_text, re.IGNORECASE):
                 aura_result.append(m.group(2))
             elif m := re.search("nearby allies' (.*)", formatted_text, re.IGNORECASE):
@@ -212,7 +211,7 @@ class ActiveSkill(Skill):
             support_comment = ''
         name = self.name
         if name.startswith('Vaal') and not get_vaal_effect:
-            name = name[5:]
+            name = self.original_name
         special_quality = f'{self.quality_type.name} ' if self.quality_type != GemQualityType.Superior else ''
         header = f'// {special_quality}{name} (lvl {self.level}, {self.quality}%) {support_comment} {self.aura_effect}%'
         return [header] + aura_result
@@ -221,30 +220,9 @@ class ActiveSkill(Skill):
         curse_result = []
         previous_value = None
         for stat, value in self.iterate_effects():
-
-            if stat not in curse_translation:
+            formatted_text, previous_value = self.translate_effect(stat, value, previous_value, self.get_curse_effect(), curse_translation)
+            if not formatted_text:
                 continue
-
-            for translation in curse_translation[stat]:
-                condition = translation["condition"][0]
-                if condition == {} or condition.get("max", math.inf) >= value >= condition.get("min", -math.inf):
-                    break
-            else:
-                if value == 0:
-                    continue
-                raise Exception(f"Could not find the right translation for {stat} (value: {value}) in {curse_translation[stat]}")
-
-            value = scaled_value(value, self.get_curse_effect(), translation['index_handlers'][0])
-            if len(translation['format']) > 1:
-                if previous_value is not None:
-                    formatted_text = translation['string'].format(previous_value, value)
-                    previous_value = None
-                else:
-                    previous_value = value
-                    continue
-            else:
-                formatted_text = translation['string'].format(value)
-
             if m := re.search('Other effects on Cursed enemies expire (\d+)% slower', formatted_text):
                 # ailments are a subsection of "effects", but the only ones that matter
                 # this would be inaccurate if there are other "more ailment duration" mods, but they are nonexistent
@@ -253,7 +231,7 @@ class ActiveSkill(Skill):
                 # debilitate is not recognised by pob
                 curse_result += ['Nearby Enemies deal 10% less damage', 'Nearby Enemies have 20% less movement speed.']
             elif 'to Hits against Cursed Enemies' in formatted_text:
-                curse_result.append(formatted_text.replace("against Cursed Enemies", ""))
+                curse_result.append(formatted_text.replace('against Cursed Enemies', ''))
             elif m := re.search(r'Cursed enemies grant (\d+) (Life|Mana) when Hit by (Attacks|Spells)', formatted_text):
                 curse_result.append(f'+{m.group(1)} {m.group(2)} gained for each Enemy hit by your {m.group(3)}')
             elif m := re.search(r'Cursed Enemies grant (.*)% (Life|Mana) Leech when Hit by (Attack|Spell)s', formatted_text, re.IGNORECASE):
@@ -270,7 +248,7 @@ class ActiveSkill(Skill):
                 curse_result.append(f'Nearby Enemies take {m.group(1)}% increased Projectile Damage')
             elif m := re.search(r'(Ignite|Freeze|Shock)(|s) on Cursed enemies (have|has) (\d+)% increased Duration', formatted_text):
                 curse_result.append(f'{m.group(4)}% increased {m.group(1)} Duration on Enemies')
-            elif any(substr in formatted_text.lower() for substr in ["split", "charge", "overkill"]):
+            elif any(substr in formatted_text.lower() for substr in ['split', 'charge', 'overkill']):
                 # not recognised by pob at all
                 continue
             elif m := re.search('^Cursed(.*)Enemies (.*)', formatted_text, re.IGNORECASE):
@@ -286,6 +264,31 @@ class ActiveSkill(Skill):
         special_quality = f'{self.quality_type.name} ' if self.quality_type != GemQualityType.Superior else ''
         header = f'// {special_quality}{name} (lvl {self.level}, {self.quality}%) {support_comment} {self.get_curse_effect()}%'
         return [header] + curse_result
+
+    @staticmethod
+    def translate_effect(effect_id, effect_value, previous_effect_value, scaling_factor, translation):
+        """Finds the correct translation for an effect depending on the effects value"""
+        if effect_id not in translation:
+            return '', None
+
+        for translation in translation[effect_id]:
+            condition = translation['condition'][0]
+            if condition == {} or condition.get('max', math.inf) >= effect_value >= condition.get('min', -math.inf):
+                break
+        else:
+            if effect_value == 0:
+                return '', None
+            raise Exception(
+                f'Could not find the right translation for {effect_value} (value: {effect_value}) in {translation[effect_id]}')
+
+        value = scaled_value(effect_value, scaling_factor, translation['index_handlers'][0])
+        if len(translation['format']) > 1:
+            if previous_effect_value is not None:
+                return translation['string'].format(previous_effect_value, value), None
+            else:
+                return '', value
+        return translation['string'].format(value), None
+
 
 def item_gem_dict(mod_string: str) -> dict:
     if m := re.match(r'Socketed Gems are Supported by Level (\d+) (.+)', mod_string):
