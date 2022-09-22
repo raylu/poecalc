@@ -14,24 +14,16 @@ class GemQualityType(Enum):
 
 
 class Auras:
-	def __init__(self) -> None:
-		self.gem_data, self.text = data.load()
 
-	def analyze(self, account: str, character_name: str, user_aura_effect: int = None) -> tuple[list[list[str]], list[list[str]]]:
-		char_stats, character, skills = stats.fetch_stats(account, character_name)
-		if user_aura_effect is not None:
-			char_stats.aura_effect = user_aura_effect
+	def analyze_auras(self, char_stats, character, active_skills, skills) -> tuple[list[list[str]], list[list[str]]]:
 		aura_counter = []
-		active_skills = []
-		for item in character['items']:
-			active_skills += gems.parse_skills_in_item(item, char_stats)
 
 		results = [[f'// character increased aura effect: {char_stats.aura_effect}%']]
 		vaal_results = []
 		for gem in active_skills:
 			if gem.applies_to_allies():
 				aura_counter.append(gem.aura_effect)
-			if 'aura' in gem.tags:
+			if 'aura' in gem.tags and 'curse' not in gem.tags:
 				results.append(gem.get_aura(get_vaal_effect=False))
 				if 'vaal' in gem.tags:
 					vaal_results.append(gem.get_aura(get_vaal_effect=True))
@@ -48,6 +40,14 @@ class Auras:
 				results.append(item_result)
 
 		return results, vaal_results
+
+	def analyze_curses(self, char_stats, active_skills) -> list[list[str]]:
+		curse_effect = round(((1 + char_stats.inc_curse_effect / 100) * (1 + char_stats.more_curse_effect / 100) - 1) * 100)
+		results = [[f'// character increased curse effect: {curse_effect}%']]
+		for gem in active_skills:
+			if 'curse' in gem.tags:
+				results.append(gem.get_curse())
+		return results
 
 	def ascendancy_mod(self, aura_counter: list[int], character_stats: stats.Stats, node_name: str) -> list[str]:
 		# TODO: champion
@@ -106,6 +106,17 @@ class Auras:
 				'// Essence Glutton',
 				'For each nearby corpse, you and nearby Allies Regenerate 0.2% of Energy Shield per second, up to 2.0% per second',
 				'For each nearby corpse, you and nearby Allies Regenerate 5 Mana per second, up to 50 per second',
+			]
+		elif node_name == 'Malediction':
+			return [
+				'// Malediction',
+				'Nearby Enemies have Malediction'
+			]
+		elif node_name == 'Void Beacon':
+			return [
+				'// Void Beacon',
+				'Nearby Enemies have -20% to Cold Resistance',
+				'Nearby Enemies have -20% to Chaos Resistance'
 			]
 
 	def item_aura(self, item: dict, character_stats: stats.Stats, aura_counter: list):
