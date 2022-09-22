@@ -1,6 +1,7 @@
-import dataclasses
+from dataclasses import dataclass, field
 import json
 import re
+from collections import defaultdict
 from copy import deepcopy
 
 import httpx
@@ -8,29 +9,32 @@ import gems
 import jewels
 
 
-@dataclasses.dataclass
+@dataclass
 class Stats:
-	flat_life: int
-	increased_life: int
-	strength: int
-	dexterity: int
-	intelligence: int
-	mana: int
-	flat_str: int
-	flat_dex: int
-	flat_int: int
-	flat_mana: int
-	inc_str: int
-	inc_dex: int
-	inc_int: int
-	inc_mana: int
-	aura_effect: int
-	additional_notables: set
-	global_gem_level_increase: list
-	global_gem_quality_increase: list
-	specific_aura_effect: dict
-	devotion: int
-	militant_faith_aura_effect: bool
+	flat_life: int = 0
+	flat_str: int = 0
+	flat_dex: int = 0
+	flat_int: int = 0
+	strength: int = 0
+	dexterity: int = 0
+	intelligence: int = 0
+	specific_aura_effect: defaultdict[int] = field(default_factory=lambda: defaultdict(int))
+	specific_curse_effect: defaultdict[int] = field(default_factory=lambda: defaultdict(int))
+	increased_life: int = 0
+	mana: int = 0
+	flat_mana: int = 0
+	inc_str: int = 0
+	inc_dex: int = 0
+	inc_int: int = 0
+	inc_mana: int = 0
+	aura_effect: int = 0
+	inc_curse_effect: int = 0
+	more_curse_effect: int = 0
+	additional_notables: set[str] = field(default_factory=set)
+	global_gem_level_increase: list[tuple[set, int]] = field(default_factory=list)
+	global_gem_quality_increase: list[tuple[set, int]] = field(default_factory=list)
+	devotion: int = 0
+	militant_faith_aura_effect: bool = False
 
 
 client = httpx.Client(timeout=15)
@@ -51,26 +55,10 @@ def fetch_stats(account, character_name) -> tuple[Stats, dict, dict]:
 
 	stats = Stats(
 		flat_life=38 + character['character']['level'] * 12,
-		increased_life=0,
-		mana=0,
-		strength=0,
-		dexterity=0,
-		intelligence=0,
 		flat_str=tree['classes'][character['character']['classId']]['base_str'],
 		flat_dex=tree['classes'][character['character']['classId']]['base_dex'],
 		flat_int=tree['classes'][character['character']['classId']]['base_int'],
 		flat_mana=34 + character['character']['level'] * 6,
-		inc_str=0,
-		inc_dex=0,
-		inc_int=0,
-		inc_mana=0,
-		aura_effect=0,
-		additional_notables=set(),
-		global_gem_level_increase=[],
-		global_gem_quality_increase=[],
-		specific_aura_effect={},
-		devotion=0,
-		militant_faith_aura_effect=False
 	)
 	tree, skills, stats = jewels.process_transforming_jewels(tree, skills, stats, character)
 
@@ -159,6 +147,9 @@ matchers = [(re.compile(pattern), attr) for pattern, attr in [
 	(r'Allocates (.*)', 'additional_notable'),
 	(r'(.\d+) to Devotion', 'devotion'),
 	(r'Grants (.*) per (\d+)% Quality', 'alt_quality_bonus'),
+	(r'(\d+)% (in|de)creased Effect of your Curses', 'inc_curse_effect'),
+	(r'(\d+)% (more|less) Effect of your Curses', 'more_curse_effect'),
+	(r'(\d+)% increased (.*) Curse Effect', 'specific_curse_effect')
 ]]
 
 
@@ -176,11 +167,7 @@ def _parse_mods(stats: Stats, mods: list) -> None:
 			m = regex.search(mod)
 			if m:
 				if attr == 'specific_aura_effect':
-					aura_name = m.group(1)
-					if aura_name in stats.specific_aura_effect:
-						stats.specific_aura_effect[aura_name] += int(m.group(2))
-					else:
-						stats.specific_aura_effect[aura_name] = int(m.group(2))
+					stats.specific_aura_effect[m.group(1)] += int(m.group(2))
 					continue
 
 				if attr == 'global_level':
@@ -201,6 +188,24 @@ def _parse_mods(stats: Stats, mods: list) -> None:
 				if attr == 'alt_quality_bonus':
 					# TODO: handle quality % on item
 					_parse_mods(stats, [jewels.scale_numbers_in_string(m.group(1), 20 // int(m.group(2)))])
+					continue
+
+				if attr == 'inc_curse_effect':
+					if m.group(2) == 'in':
+						stats.inc_curse_effect += int(m.group(1))
+					else:
+						stats.inc_curse_effect -= int(m.group(1))
+					continue
+
+				if attr == 'more_curse_effect':
+					if m.group(2) == 'more':
+						stats.more_curse_effect += int(m.group(1))
+					else:
+						stats.more_curse_effect -= int(m.group(1))
+					continue
+
+				if attr == 'specific_curse_effect':
+					stats.specific_curse_effect[m.group(2)] += int(m.group(1))
 					continue
 
 				value = int(m.group(1))
