@@ -1,8 +1,6 @@
 #!/usr/bin/env python3
 
 import sys
-import gems
-import stats
 
 if len(sys.argv) == 3:
 	import eventlet
@@ -16,6 +14,8 @@ from pigwig import PigWig, Response
 from pigwig.exceptions import HTTPException
 
 import auras
+import gems
+import stats
 
 curse_effect_selection = {
 	'Enemy Type (optional)': 0,
