@@ -1,15 +1,7 @@
 import re
-from enum import Enum
 
 import stats
 import gems
-
-
-class GemQualityType(Enum):
-	Superior = 0
-	Anomalous = 1
-	Divergent = 2
-	Phantasmal = 3
 
 
 class Auras:

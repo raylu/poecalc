@@ -89,7 +89,7 @@ class SupportSkill(Skill):
         super().__init__(gem_dict, socketed)
         self.allowed_types = {gem_type.lower() for gem_type in self.get_gem_data()['support_gem']['allowed_types']}
         self.excluded_types = {gem_type.lower() for gem_type in self.get_gem_data()['support_gem']['excluded_types']}
-        self.support_gems_only = self.get_gem_data()['support_gem']['supports_gems_only']
+        self.support_gems_only = self.get_gem_data()['support_gem']['supports_gems_only'] or not socketed
         self.added_types = {gem_type.lower() for gem_type in self.get_gem_data()['support_gem'].get('added_types', [])}
 
     def can_support(self, active_skill_gem: Skill):
@@ -242,8 +242,8 @@ class ActiveSkill(Skill):
                 curse_result.append(f'{m.group(1)}% of {m.group(3)} Damage leeched as {m.group(2)}')
             elif m := re.search(r'Cursed enemies grant (\d+) (Life|Mana) when Killed', formatted_text):
                 curse_result.append(f'+{m.group(1)} {m.group(2)} gained on kill')
-            elif m := re.search('Hits against Cursed Enemies have (.*)', formatted_text):
-                curse_result.append(m.group(1))
+            elif m := re.search('Hits (against|on) Cursed Enemies have (.*)', formatted_text):
+                curse_result.append(m.group(2))
             elif m := re.search('Ailments inflicted on Cursed Enemies (.*)', formatted_text):
                 curse_result.append(f'Damaging Ailments {m.group(1)}')
             elif m := re.search(r'Cursed enemies take (\d+)% increased Damage from Damage over Time effects',
@@ -254,6 +254,10 @@ class ActiveSkill(Skill):
             elif m := re.search(r'(Ignite|Freeze|Shock)(|s) on Cursed enemies (have|has) (\d+)% increased Duration',
                                 formatted_text):
                 curse_result.append(f'{m.group(4)}% increased {m.group(1)} Duration on Enemies')
+            elif 'increased Duration of Elemental Ailments on Cursed enemies' in formatted_text:
+                curse_result.append(formatted_text.replace('on cursed Enemies', ''))
+            elif m := re.search(r'Hits have (\d+)% chance to (.*) Cursed Enemies', formatted_text):
+                curse_result.append(f'{m.group(1)}% Chance to {m.group(2)} Enemies on Hit')
             elif any(substr in formatted_text.lower() for substr in ['split', 'charge', 'overkill']):
                 # not recognised by pob at all
                 continue
@@ -287,7 +291,6 @@ class ActiveSkill(Skill):
             raise Exception(
                 f'Could not find the right translation for '
                 f'{effect_value} (value: {effect_value}) in {translation_dict[effect_id]}')
-
         value = scaled_value(effect_value, scaling_factor, translation['index_handlers'][0])
         if len(translation['format']) == 1:
             return translation['string'].format(value), None
@@ -330,6 +333,9 @@ def scaled_value(value: int, factor: int, index_handlers: list[str]) -> Union[in
             continue
         elif handler == 'divide_by_one_hundred':
             value /= 100
+            allow_float = True
+        elif handler == 'per_minute_to_per_second_2dp':
+            value /= 30
             allow_float = True
         else:
             raise Exception('unhandled index_handler: ' + handler)
