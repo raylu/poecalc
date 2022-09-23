@@ -10,7 +10,7 @@ def load() -> tuple[dict[str, dict], dict, dict]:
 		raw_gems: dict[str, dict] = json.load(f)
 	gems: dict[str, dict] = {}
 	for k, v in raw_gems.items():
-		if k.endswith('Royale') or k.endswith('Triggered') or k.startswith('New'):
+		if k.endswith('Royale') or k.endswith('Triggered'):
 			continue
 		if v['base_item']:
 			gems[v['base_item']['display_name']] = v
