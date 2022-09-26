@@ -1,0 +1,33 @@
+# https://help.github.com/actions/language-and-framework-guides/using-python-with-github-actions
+
+name: CI
+
+on:
+  push:
+    branches: '*'
+  pull_request:
+    branches: '*'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - name: set up Python 3.x
+      uses: actions/setup-python@v2
+      with:
+        python-version: '3.x'
+    - name: install
+      run: pip3 install --quiet --requirement requirements.txt
+    - name: download data
+      run: |
+        mkdir data
+        cd data
+        wget -q https://raw.githubusercontent.com/brather1ng/RePoE/master/RePoE/data/gems.json
+        wget -q https://raw.githubusercontent.com/brather1ng/RePoE/master/RePoE/data/stat_translations/aura_skill.json
+        wget -q https://raw.githubusercontent.com/brather1ng/RePoE/master/RePoE/data/stat_translations/curse_skill.json
+        wget -q https://raw.githubusercontent.com/KeshHere/TimelessJewelData/main/ElegantHubrisSeeds.zip
+        wget -q https://raw.githubusercontent.com/KeshHere/TimelessJewelData/main/MilitantFaithSeeds.zip
+        wget -q https://raw.githubusercontent.com/PathOfBuildingCommunity/PathOfBuilding/dev/src/Data/LegionPassives.lua
+    - name: tests
+      run: python3 -m unittest --verbose
