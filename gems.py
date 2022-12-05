@@ -67,7 +67,7 @@ class Skill:
             else:
                 value = value.get('value')
             effects.append((stat['id'], value))
-        effects.extend(self.quality_effect())
+        effects.extend(self.quality_effect(get_vaal_effect))
         return effects
 
     def get_gem_data(self, get_vaal_effect: bool = True) -> dict:
@@ -75,7 +75,7 @@ class Skill:
             return all_gems[self.original_name]
         return all_gems[self.name]
 
-    def quality_effect(self) -> list:
+    def quality_effect(self, vaal_effect) -> list:
         return []
 
 
@@ -103,7 +103,7 @@ class SupportSkill(Skill):
                 return False
         return len(active_skill_gem.tags & self.excluded_types) == 0
 
-    def quality_effect(self) -> list:
+    def quality_effect(self, vaal_effect) -> list:
         gem_data = self.get_gem_data()
         if not gem_data['static']['quality_stats']:
             return []
@@ -146,11 +146,14 @@ class ActiveSkill(Skill):
         self.more_curse_effect += character_stats.more_curse_effect
         self.more_hex_effect += character_stats.more_hex_effect
 
-    def quality_effect(self) -> list:
+    def quality_effect(self, vaal_effect) -> list:
         gem_data = self.get_gem_data(False)
         if not gem_data['static']['quality_stats']:
             return []
-        quality_effect = gem_data['static']['quality_stats'][self.quality_type.value]
+        # Vaal Skills always have the regular quality effect, even if they have alternative quality
+        quality_type = GemQualityType.Superior if vaal_effect else self.quality_type
+
+        quality_effect = gem_data['static']['quality_stats'][quality_type.value]
         quality_effect_value = int(quality_effect['value'] * self.quality / 1000)
         if quality_effect['id'] == 'aura_effect_+%':
             self.aura_effect += quality_effect_value
