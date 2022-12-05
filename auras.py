@@ -43,12 +43,10 @@ class Auras:
 
 	@staticmethod
 	def ascendancy_mod(aura_counter: list[int], char_stats: stats.Stats, node_name: str) -> list[str]:
-		# TODO: champion
 		if node_name == 'Champion':
 			return [
 				'// Champion',
 				'Enemies Taunted by you take 10% increased Damage',
-				'Your Hits permanently Intimidate Enemies that are on Full Life',
 			]
 		if node_name == 'Guardian':
 			return [
@@ -60,6 +58,11 @@ class Auras:
 			return [
 				'// Necromancer',
 				f'{sum(int((1 + effect/100) * 2) for effect in aura_counter)}% increased Attack and Cast Speed',
+			]
+		if node_name in ['Deadeye', 'Gathering Winds']:
+			return [
+				f'// {node_name}',
+				f'You and Nearby Allies have Tailwind',
 			]
 		if node_name == 'Unwavering Faith':
 			return [
@@ -100,6 +103,12 @@ class Auras:
 				'For each nearby corpse, you and nearby Allies Regenerate 0.2% of Energy Shield per second, up to 2.0% per second',
 				'For each nearby corpse, you and nearby Allies Regenerate 5 Mana per second, up to 50 per second',
 			]
+		if node_name == 'Plaguebringer':
+			return [
+				'// Plaguebringer',
+				'With at least one nearby corpse, you and nearby Allies deal 10% more Damage',
+				'With at least one nearby corpse, nearby Enemies deal 10% reduced Damage',
+			]
 		if node_name == 'Malediction':
 			return [
 				'// Malediction',
@@ -110,6 +119,23 @@ class Auras:
 				'// Void Beacon',
 				'Nearby Enemies have -20% to Cold Resistance',
 				'Nearby Enemies have -20% to Chaos Resistance'
+			]
+		if node_name == 'Conqueror':
+			return [
+				'// Conqueror',
+				'Nearby Enemies deal 20% less Damage'  # "hits and ailments" is not recognized by PoB,
+			]
+		if node_name == 'Worthy Foe':
+			return [
+				'// Worthy Foe',
+				'Nearby Enemies take 20% increased Damage',
+				"Your Hits can't be evaded"
+			]
+		if node_name == 'Master of Metal':
+			return [
+				'// Master of Metal',
+				'+1000 to Armour',
+				'You deal 6 to 12 added Physical Damage for each Impale on Enemy',
 			]
 		return []
 
