@@ -10,11 +10,6 @@
 			<input type="text" name="account" placeholder="account" value="{{ account }}">
 			<input type="text" name="character" placeholder="character" value="{{ character }}">
 			<input type="text" name="aura_effect" placeholder="aura effect (optional)" value="{{ aura_effect }}">
-			<select name="enemy_type">
-			    {% for enemy_type in enemy_types %}
-			        <option value="{{ enemy_type }}">{{ enemy_type }}</option>
-			    {% endfor %}
-			</select>
 			<input type="submit" value="go">
 		</form>
 

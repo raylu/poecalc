@@ -17,15 +17,8 @@ import auras
 import gems
 import stats
 
-curse_effect_selection = {
-	'Enemy Type (optional)': 0,
-	'None': 0,
-	'Standard Boss': -33,
-	'Guardian/Pinnacle': -66
-}
-
 def root(request):
-	return Response.render(request, 'index.jinja2', {"enemy_types": curse_effect_selection.keys()})
+	return Response.render(request, 'index.jinja2', {})
 
 def analyze_auras(request, account, character):
 	# eventlet encodes PATH_INFO as latin1
@@ -36,8 +29,6 @@ def analyze_auras(request, account, character):
 	char_stats, char, skills = stats.fetch_stats(account, character)
 	if 'aura_effect' in request.query and request.query['aura_effect'] != '':
 		char_stats.aura_effect = int(request.query['aura_effect'])
-	if 'enemy_type' in request.query:
-		char_stats.more_hex_effect += curse_effect_selection[request.query['enemy_type']]
 
 	active_skills = []
 	for item in char['items']:
@@ -52,7 +43,6 @@ def analyze_auras(request, account, character):
 		'aura_effect': request.query['aura_effect'],
 		'account': account,
 		'character': character,
-		'enemy_types': curse_effect_selection.keys()
 	})
 
 
