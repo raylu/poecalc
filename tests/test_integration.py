@@ -27,7 +27,12 @@ def create_gem(name, level, quality, quality_type: GemQualityType = GemQualityTy
 
 
 def create_item(mods, socketed_gems):
-	return dict(name='', explicitMods=mods, socketedItems=socketed_gems)
+	return {
+		'name': '',
+		'inventoryId': 'BodyArmour',
+		'explicitMods': mods,
+		'socketedItems': socketed_gems,
+	}
 
 
 class TestAuras(unittest.TestCase):
