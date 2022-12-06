@@ -348,6 +348,8 @@ def scaled_value(value: int, factor: int, index_handlers: list[str]) -> Union[in
 
 
 def parse_skills_in_item(item: dict, char_stats) -> list[ActiveSkill]:
+    if item['inventoryId'] in ['Weapon2', 'Offhand2']:
+        return []
     socketed_items = item.get('socketedItems', [])
     active_skills = [ActiveSkill(skill, socketed=True) for skill in socketed_items if skill.get('support') is False]
     support_skills = [SupportSkill(skill, socketed=True) for skill in socketed_items if skill.get('support')]
