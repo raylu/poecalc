@@ -20,16 +20,16 @@ class Gem:
     original_name: str
     level: int
     quality: int
-    socketed: bool
+    socket: int
     tags: set
     quality_type: GemQualityType
 
-    def __init__(self, gem_dict: dict, socketed: bool) -> None:
+    def __init__(self, gem_dict: dict, socket: int) -> None:
         self.name = gem_dict['baseType']
         self.original_name = self.name
         self.level = 1
         self.quality = 0
-        self.socketed = socketed
+        self.socket = socket
         gem_data = self.get_gem_data()
         self.tags = {gem_tag.lower() for gem_tag in
                      (gem_data['tags'] if gem_data['tags'] else [] + gem_data.get('types', []))}
@@ -89,15 +89,15 @@ class SupportGem(Gem):
     added_types: set
     support_gems_only: bool
 
-    def __init__(self, gem_dict: dict, socketed: bool) -> None:
-        super().__init__(gem_dict, socketed)
+    def __init__(self, gem_dict: dict, socket: int) -> None:
+        super().__init__(gem_dict, socket)
         self.allowed_types = {gem_type.lower() for gem_type in self.get_gem_data()['support_gem']['allowed_types']}
         self.excluded_types = {gem_type.lower() for gem_type in self.get_gem_data()['support_gem']['excluded_types']}
-        self.support_gems_only = self.get_gem_data()['support_gem']['supports_gems_only'] or not socketed
+        self.support_gems_only = self.get_gem_data()['support_gem']['supports_gems_only'] or (socket is None)
         self.added_types = {gem_type.lower() for gem_type in self.get_gem_data()['support_gem'].get('added_types', [])}
 
     def can_support(self, active_skill_gem: Gem):
-        if self.support_gems_only and not active_skill_gem.socketed:
+        if self.support_gems_only and active_skill_gem.socket is None:
             return False
         if self.allowed_types:
             if 'and' in self.allowed_types:
@@ -122,8 +122,8 @@ class SkillGem(Gem):
     more_hex_effect: int
     supports: list
 
-    def __init__(self, gem_dict: dict, socketed: bool) -> None:
-        super().__init__(gem_dict, socketed)
+    def __init__(self, gem_dict: dict, socket: int) -> None:
+        super().__init__(gem_dict, socket)
         if 'hybrid' in gem_dict:
             self.original_name = gem_dict['hybrid']['baseTypeName']
         self.aura_effect = 0
@@ -170,29 +170,28 @@ class SkillGem(Gem):
     def applies_to_allies(self) -> bool:
         return 'aura' in self.tags and 'auraaffectsenemies' not in self.tags
 
-    def apply_supports(self, support_gems: list[SupportGem]):
-        for support_gem in support_gems:
-            if not support_gem.can_support(self):
+    def apply_support(self, support_gem: SupportGem):
+        if not support_gem.can_support(self):
+            return
+        self.tags |= support_gem.added_types
+        has_effect = False
+        for stat, value in support_gem.iterate_effects():
+            if stat == 'non_curse_aura_effect_+%':
+                self.aura_effect += value
+            elif stat == 'aura_effect_+%':
+                self.aura_effect += value
+                self.inc_curse_effect += value  # Arrogance + Blasphemy
+            elif stat in ['supported_aura_skill_gem_level_+', 'supported_active_skill_gem_level_+']:
+                self.level += value
+            elif stat == 'supported_active_skill_gem_quality_%':
+                self.quality += value
+            elif stat == 'curse_effect_+%':
+                self.inc_curse_effect += value
+            else:
                 continue
-            self.tags |= support_gem.added_types
-            has_effect = False
-            for stat, value in support_gem.iterate_effects():
-                if stat == 'non_curse_aura_effect_+%':
-                    self.aura_effect += value
-                elif stat == 'aura_effect_+%':
-                    self.aura_effect += value
-                    self.inc_curse_effect += value  # Arrogance + Blasphemy
-                elif stat in ['supported_aura_skill_gem_level_+', 'supported_active_skill_gem_level_+']:
-                    self.level += value
-                elif stat == 'supported_active_skill_gem_quality_%':
-                    self.quality += value
-                elif stat == 'curse_effect_+%':
-                    self.inc_curse_effect += value
-                else:
-                    continue
-                has_effect = True
-            if has_effect:
-                self.supports.append(support_gem)
+            has_effect = True
+        if has_effect:
+            self.supports.append(support_gem)
 
     def get_aura(self, get_vaal_effect: bool) -> list[str]:
         aura_result = []
@@ -358,8 +357,8 @@ def parse_skills_in_item(item: dict, char_stats) -> list[SkillGem]:
     if item['inventoryId'] in ['Weapon2', 'Offhand2']:
         return []
     socketed_items = item.get('socketedItems', [])
-    active_skills = [SkillGem(gem, socketed=True) for gem in socketed_items if not gem.get('support')]
-    support_gems = [SupportGem(gem, socketed=True) for gem in socketed_items if gem.get('support')]
+    active_skills = [SkillGem(gem, socket=gem['socket']) for gem in socketed_items if not gem.get('support')]
+    support_gems = [SupportGem(gem, socket=gem['socket']) for gem in socketed_items if gem.get('support')]
     level_mods = copy(char_stats.global_gem_level_increase)
     quality_mods = copy(char_stats.global_gem_quality_increase)
     for mod_type in ['explicitMods', 'implicitMods']:
@@ -369,21 +368,27 @@ def parse_skills_in_item(item: dict, char_stats) -> list[SkillGem]:
             elif m := re.search(r'(.\d+)% to Quality of Socketed (.*)Gems', mod):
                 quality_mods += parse_gem_descriptor(m.group(2), int(m.group(1)))
             elif 'Grants Level' in mod:
-                active_skills.append(SkillGem(item_gem_dict(mod), socketed=False))
+                active_skills.append(SkillGem(item_gem_dict(mod), socket=None))
             elif m := re.search(r'Curse Enemies with (.*) (on|when) (.*) (\d+)% increased Effect', mod):
-                skill = SkillGem(item_gem_dict(mod), socketed=False)
+                skill = SkillGem(item_gem_dict(mod), socket=None)
                 skill.inc_curse_effect = int(m.group(4))
                 active_skills.append(skill)
             elif 'Socketed Gems are Supported by Level' in mod:
-                support_gems.append(SupportGem(item_gem_dict(mod), socketed=False))
+                support_gems.append(SupportGem(item_gem_dict(mod), socket=None))
 
     for gem in support_gems + active_skills:
-        if gem.socketed:
+        if gem.socket is not None:
             gem.add_levels(level_mods)
             gem.add_quality(quality_mods)
     for skill in active_skills:
         skill.add_effects(char_stats)
-        skill.apply_supports(support_gems)
+        linked_sockets = []
+        if skill.socket is not None:
+            group = item['sockets'][skill.socket]['group']
+            linked_sockets = [i for i, socket in enumerate(item['sockets']) if socket['group'] == group]
+        for support_gem in support_gems:
+            if support_gem.socket is None or support_gem.socket in linked_sockets:
+                skill.apply_support(support_gem)
     return active_skills
 
 

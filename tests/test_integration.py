@@ -15,15 +15,16 @@ def create_gem(name, level, quality, quality_type: GemQualityType = GemQualityTy
 		type_line.append(quality_type.name)
 	type_line.append(name)
 	type_line = ' '.join(type_line)
-	return dict(
-		typeLine=type_line,
-		baseType=name,
-		properties=[
+	return {
+		'typeLine': type_line,
+		'baseType': name,
+		'properties': [
 			{'name': 'Level', 'values': [[str(level)]]},
-			{'name': 'Quality', 'values': [[str(quality)]]}
+			{'name': 'Quality', 'values': [[str(quality)]]},
 		],
-		support="Support" in name
-	)
+		'support': "Support" in name,
+		'socket': 0,
+	}
 
 
 def create_item(mods, socketed_gems):
@@ -32,6 +33,7 @@ def create_item(mods, socketed_gems):
 		'inventoryId': 'BodyArmour',
 		'explicitMods': mods,
 		'socketedItems': socketed_gems,
+		'sockets': [{'group': 0}]
 	}
 
 
@@ -157,22 +159,21 @@ class TestAuras(unittest.TestCase):
 				'Grants Level 20 Conductivity Skill',
 				'Curse Enemies with Vulnerability on Hit with 48% increased Effect'
 			],
-			socketed_gems=[create_gem("Despair", 20, 20)]
+			socketed_gems=[create_gem('Despair', 20, 20)]
 		)
 		active_skills = parse_skills_in_item(item, char_stats)
-		assert len(active_skills) == 3
-		despair = active_skills[0]
+		despair, conductivity, vulnerability = active_skills
+
 		assert despair.level == 23
 		assert despair.quality == 40
-		assert despair.supports
-		blasphemy = despair.supports[0]
+		(blasphemy,) = despair.supports
 		assert blasphemy.level == 20
 		assert blasphemy.quality == 0
-		conductivity = active_skills[1]
+
 		assert conductivity.level == 20
 		assert conductivity.quality == 0
 		assert not conductivity.supports
-		vulnerability = active_skills[2]
+
 		assert vulnerability.level == 1
 		assert vulnerability.quality == 0
 		assert not vulnerability.supports
