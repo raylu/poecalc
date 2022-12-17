@@ -36,10 +36,12 @@ def analyze_auras(request, account, character):
 
 	aura_results, vaal_aura_results = analyzer.analyze_auras(char_stats, char, active_skills, skills)
 	curse_results = analyzer.analyze_curses(char_stats, active_skills)
+	mine_results = analyzer.analyze_mines(char_stats, active_skills)
 	return Response.render(request, 'auras.jinja2', {
 		'results': result_to_str(aura_results),
 		'vaal_results': result_to_str(vaal_aura_results),
 		'curse_results': result_to_str(curse_results),
+		'mine_results': result_to_str(mine_results),
 		'aura_effect': request.query['aura_effect'],
 		'account': account,
 		'character': character,

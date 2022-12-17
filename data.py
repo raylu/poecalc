@@ -20,7 +20,7 @@ def load() -> tuple[dict[str, dict], dict, dict]:
 	aura_translation: dict[str, str] = {}
 	with open('data/aura_skill.json', 'rb') as f:
 		raw_text: list[dict] = json.load(f)
-	prefixes = ['You and nearby', 'Your and nearby', 'Aura grants', 'Buff grants']
+	prefixes = ['You and nearby', 'Your and nearby', 'Aura grants', 'Buff grants', 'Each Mine']
 	for translation in raw_text:
 		for k in translation['ids']:
 			translated = translation['English'][0]

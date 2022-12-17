@@ -28,9 +28,12 @@ class Stats:
 	inc_int: int = 0
 	inc_mana: int = 0
 	aura_effect: int = 0
+	aura_effect_on_enemies: int = 0
+	mine_aura_effect: int = 0
 	inc_curse_effect: int = 0
 	more_curse_effect: int = 0
 	more_hex_effect: int = 0
+	mine_limit: int = 15
 	additional_notables: set[str] = field(default_factory=set)
 	global_gem_level_increase: list[tuple[set, int]] = field(default_factory=list)
 	global_gem_quality_increase: list[tuple[set, int]] = field(default_factory=list)
@@ -47,6 +50,8 @@ def fetch_stats(account, character_name) -> tuple[Stats, dict, dict]:
 	r = client.post('https://www.pathofexile.com/character-window/get-items', data=params)
 	r.raise_for_status()
 	character = r.json()
+	# remove offhand items
+	character['items'] = [item for item in character['items'] if item['inventoryId'] not in ['Weapon2', 'Offhand2']]
 
 	r = client.get('https://www.pathofexile.com/character-window/get-passive-skills', params=params)
 	r.raise_for_status()
@@ -64,8 +69,6 @@ def fetch_stats(account, character_name) -> tuple[Stats, dict, dict]:
 	tree, skills, stats = jewels.process_transforming_jewels(tree, skills, stats, character)
 
 	for item in character['items']:
-		if item['inventoryId'] in ['Weapon2', 'Offhand2']:
-			continue
 		_parse_item(stats, item)
 	for item in skills['items']:  # jewels
 		if 'Cluster Jewel' in item['typeLine']:  # skip cluster jewel base node
@@ -150,7 +153,10 @@ matchers = [(re.compile(pattern), attr) for pattern, attr in [
 	(r'Grants (.*) per (\d+)% Quality', 'alt_quality_bonus'),
 	(r'(\d+)% (in|de)creased Effect of your Curses', 'inc_curse_effect'),
 	(r'(\d+)% (more|less) Effect of your Curses', 'more_curse_effect'),
-	(r'(\d+)% increased (.*) Curse Effect', 'specific_curse_effect')
+	(r'(\d+)% increased (.*) Curse Effect', 'specific_curse_effect'),
+	(r'Can have up to (\d+) additional Remote Mines placed at a time', 'mine_limit'),
+	(r'(\d+)% increased Effect of Non-Curse Auras from your Skills on Enemies', 'aura_effect_on_enemies'),
+	(r'(\d+)% increased Effect of Auras from Mines', 'mine_aura_effect'),
 ]]
 
 

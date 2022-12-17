@@ -14,7 +14,7 @@ class Auras:
 		for gem in active_skills:
 			if gem.applies_to_allies():
 				aura_counter.append(gem.aura_effect)
-			if 'aura' in gem.tags and 'curse' not in gem.tags:
+			if 'aura' in gem.tags and not {'curse', 'remotemined'} & gem.tags:
 				results.append(gem.get_aura(get_vaal_effect=False))
 				if 'vaal' in gem.tags:
 					vaal_results.append(gem.get_aura(get_vaal_effect=True))
@@ -25,8 +25,6 @@ class Auras:
 				results.append(ascendancy_result)
 
 		for item in char['items']:
-			if item['inventoryId'] in ['Weapon2', 'Offhand2']:
-				continue
 			if item_result := self.item_aura(item, char_stats, aura_counter):
 				results.append(item_result)
 
@@ -39,6 +37,18 @@ class Auras:
 		for gem in active_skills:
 			if 'curse' in gem.tags:
 				results.append(gem.get_curse())
+		if len(results) == 1:
+			return []
+		return results
+
+	@staticmethod
+	def analyze_mines(char_stats: stats.Stats, active_skills) -> list[list[str]]:
+		results = [[f'// character increased aura effect for mines: {char_stats.aura_effect + char_stats.mine_aura_effect + char_stats.aura_effect_on_enemies}%']]
+		for gem in active_skills:
+			if 'remotemined' in gem.tags:
+				results.append(gem.get_mine())
+		if len(results) == 1:
+			return []
 		return results
 
 	@staticmethod
