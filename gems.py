@@ -446,8 +446,9 @@ def parse_skills_in_item(item: dict, char_stats) -> list[SkillGem]:
             gem.add_levels(level_mods)
             gem.add_quality(quality_mods)
     for skill in active_skills:
+        active_supports = skill.get_active_supports(support_gems, item)
         skill.add_effects(char_stats)
-        for support_gem in skill.get_active_supports(support_gems, item):
+        for support_gem in active_supports:
             skill.apply_support(support_gem)
     return active_skills
 
