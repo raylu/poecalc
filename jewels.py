@@ -1,5 +1,7 @@
 import math
 import re
+import warnings
+
 import data
 
 legion_passive_effects = data.legion_passive_mapping()
@@ -110,6 +112,7 @@ def process_transforming_jewels(tree, skills, stats, character):
         # Timeless jewels need to be processed first, since they block other jewels from modifying notables in radius
         'Militant Faith': 1,
         'Elegant Hubris': 1,
+        'Glorious Vanity': 1,
         # To avoid rounding errors, healthy mind is processed before other jewels
         # example:
         # - '5% increased max life' -> healthy mind -> 10% -> might of the meek -> 15%
@@ -130,6 +133,8 @@ def process_transforming_jewels(tree, skills, stats, character):
             stats.militant_faith_aura_effect = '1% increased effect of Non-Curse Auras per 10 Devotion' in jewel['explicitMods']
         elif jewel['name'] == 'Elegant Hubris':
             tree = process_elegant_hubris(jewel, tree, get_radius(jewel, skills))
+        elif jewel['name'] == 'Glorious Vanity':
+            warnings.warn("Aura Effect from Glorious Vanity is not supported. Please enter Aura effect manually.")
         elif jewel['name'] == 'Healthy Mind':
             tree = process_healthy_mind(jewel, tree, get_radius(jewel, skills))
         elif jewel['name'] == 'Split Personality':

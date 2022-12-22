@@ -1,5 +1,6 @@
 import math
 import re
+import warnings
 from copy import copy
 from enum import Enum
 from typing import Union
@@ -119,6 +120,8 @@ class SupportGem(Gem):
         if self.socket is None or active_gem.socket is None:
             # Socketed gems and skills from items are always considered to be linked together
             return True
+        print(self)
+        print(item)
         group = item['sockets'][self.socket]['group']
         linked_sockets = [i for i, socket in enumerate(item['sockets']) if socket['group'] == group]
         return active_gem.socket in linked_sockets
@@ -421,8 +424,19 @@ def scaled_value(value: int, factor: int, index_handlers: list[str]) -> Union[in
 
 def parse_skills_in_item(item: dict, char_stats) -> list[SkillGem]:
     socketed_items = item.get('socketedItems', [])
-    active_skills = [SkillGem(gem, socket=gem['socket']) for gem in socketed_items if not gem.get('support')]
-    support_gems = [SupportGem(gem, socket=gem['socket']) for gem in socketed_items if gem.get('support')]
+    active_skills = []
+    support_gems = []
+    for gem in socketed_items:
+        if "Eye Jewel" in gem["baseType"]:
+            continue
+        try:
+            if gem.get('support'):
+                support_gems.append(SupportGem(gem, socket=gem['socket']))
+            else:
+                active_skills.append(SkillGem(gem, socket=gem['socket']))
+        except KeyError:
+            warnings.warn(f'Item "{gem["baseType"]}" was not recognized and could not be parsed.')
+
     level_mods = copy(char_stats.global_gem_level_increase)
     quality_mods = copy(char_stats.global_gem_quality_increase)
     for mod_type in ['explicitMods', 'implicitMods']:
