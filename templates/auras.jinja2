@@ -1,8 +1,19 @@
 {% extends 'base.jinja2' %}
 
 {% block body %}
+{% if warnings%}
+<main class="warning">{{ warnings }}</main>
+{% endif %}
+{% if results%}
 <main class="pre">{{ results }}</main>
+{% endif %}
+{% if vaal_results%}
 <main class="pre">{{ vaal_results }}</main>
+{% endif %}
+{% if curse_results%}
 <main class="pre">{{ curse_results }}</main>
+{% endif %}
+{% if mine_results%}
 <main class="pre">{{ mine_results }}</main>
+{% endif %}
 {% endblock body %}

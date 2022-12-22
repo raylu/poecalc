@@ -51,6 +51,10 @@ main {
 main.pre {
 	white-space: pre-wrap;
 }
+main.warning {
+	white-space: pre-wrap;
+	color: red;
+}
 
 footer {
 	margin-top: 100px;

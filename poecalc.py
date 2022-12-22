@@ -2,6 +2,7 @@
 
 import sys
 
+
 if len(sys.argv) == 3:
 	import eventlet
 	import eventlet.wsgi
@@ -13,6 +14,8 @@ import mimetypes
 from pigwig import PigWig, Response
 from pigwig.exceptions import HTTPException
 
+from httpx import HTTPStatusError
+import warnings
 import auras
 import gems
 import stats
@@ -24,28 +27,44 @@ def analyze_auras(request, account, character):
 	# eventlet encodes PATH_INFO as latin1
 	# https://github.com/eventlet/eventlet/blob/890f320b/eventlet/wsgi.py#L690
 	# because PEP-0333 says so https://github.com/eventlet/eventlet/pull/497
-	account = account.encode('latin1').decode('utf-8')
-	character = character.encode('latin1').decode('utf-8')
-	char_stats, char, skills = stats.fetch_stats(account, character)
-	if 'aura_effect' in request.query and request.query['aura_effect'] != '':
-		char_stats.aura_effect = int(request.query['aura_effect'])
+	with warnings.catch_warnings(record=True) as warning_list:
+		account = account.encode('latin1').decode('utf-8')
+		character = character.encode('latin1').decode('utf-8')
+		try:
+			char_stats, char, skills = stats.fetch_stats(account, character)
+		except HTTPStatusError:
+			return Response.render(request, 'auras.jinja2', {
+				'warnings': "Could not fetch character. Make sure the spelling is correct.",
+				'account': account,
+				'character': character,
+			})
 
-	active_skills = []
-	for item in char['items']:
-		active_skills += gems.parse_skills_in_item(item, char_stats)
+		if 'aura_effect' in request.query and request.query['aura_effect'] != '':
+			char_stats.aura_effect = int(request.query['aura_effect'])
 
-	aura_results, vaal_aura_results = analyzer.analyze_auras(char_stats, char, active_skills, skills)
-	curse_results = analyzer.analyze_curses(char_stats, active_skills)
-	mine_results = analyzer.analyze_mines(char_stats, active_skills)
+		active_skills = []
+		for item in char['items']:
+			active_skills += gems.parse_skills_in_item(item, char_stats)
+
+		aura_results, vaal_aura_results = analyzer.analyze_auras(char_stats, char, active_skills, skills)
+		curse_results = analyzer.analyze_curses(char_stats, active_skills)
+		mine_results = analyzer.analyze_mines(char_stats, active_skills)
 	return Response.render(request, 'auras.jinja2', {
 		'results': result_to_str(aura_results),
 		'vaal_results': result_to_str(vaal_aura_results),
 		'curse_results': result_to_str(curse_results),
 		'mine_results': result_to_str(mine_results),
 		'aura_effect': request.query['aura_effect'],
+		'warnings': prepare_warnings(warning_list),
 		'account': account,
 		'character': character,
 	})
+
+
+def prepare_warnings(warning_list: list):
+	if not warning_list:
+		return ""
+	return "Warnings:\n - " + '\n - '.join(str(warning.message) for warning in warning_list)
 
 
 def result_to_str(results: list[list[str]]) -> str:
