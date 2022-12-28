@@ -52,7 +52,7 @@ class Gem:
 	def add_levels(self, level_mods: list[tuple[set[str], int]]) -> None:
 		for required_tags, level in level_mods:
 			if len(required_tags - self.tags) == 0:
-				self.level += level
+				self.level = max(self.level + level, 1)
 
 	def add_quality(self, quality_mods: list[tuple[set[str], int]]) -> None:
 		for required_tags, quality in quality_mods:
@@ -120,8 +120,6 @@ class SupportGem(Gem):
 		if self.socket is None or active_gem.socket is None:
 			# Socketed gems and skills from items are always considered to be linked together
 			return True
-		print(self)
-		print(item)
 		group = item['sockets'][self.socket]['group']
 		linked_sockets = [i for i, socket in enumerate(item['sockets']) if socket['group'] == group]
 		return active_gem.socket in linked_sockets
