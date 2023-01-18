@@ -223,6 +223,8 @@ class SkillGem(Gem):
 				self.quality += value
 			elif stat == 'curse_effect_+%':
 				self.inc_curse_effect += value
+			elif stat == 'support_blasphemy_curse_effect_+%_final':
+				self.more_curse_effect += value
 			elif stat == 'number_of_additional_remote_mines_allowed':
 				self.mine_limit += value
 			elif stat == 'support_remote_mine_2_chance_to_deal_double_damage_%_against_enemies_near_mines':
