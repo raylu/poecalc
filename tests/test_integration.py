@@ -162,7 +162,7 @@ class TestAuras(unittest.TestCase):
 		despair = active_skills[0]
 		assert despair.level == 22  # 20 + 2 (3 Empower)
 		assert despair.quality == 36  # 20 + 16 (3 Enhance)
-		assert despair.get_curse_effect() == 34  # 0 + 10 (20 20 Blasphemy Support) + 24 (20 20 Arrogance Support)
+		assert despair.get_curse_effect() == -7  # (100 + 24 (20 20 Arrogance Support)) * (100 - 25) (Blasphemy Support)
 
 
 	def test_global_mods_from_item(self):
