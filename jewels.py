@@ -176,7 +176,14 @@ def process_militant_faith(jewel_data: dict, tree: dict, radius: int) -> dict:
 		node = tree['nodes'][str(node_hash)]
 		node['isConquered'] = True
 		if node.get('isNotable') and mapping[node['name']] != 'base_devotion':
-			node['stats'] = legion_passive_effects[mapping[node['name']]]
+			# todo: Find a source for post 3.20 timeless jewel mappings
+			if node['name'] not in mapping:
+				warnings.warn(
+					f'Passive Skill "{node["name"]}" could not be parsed.\n'
+					f'Please make sure that the displayed aura effect is correct and adjust it, if necessary'
+				)
+			else:
+				node['stats'] = legion_passive_effects[mapping[node['name']]]
 		elif node.get('isKeystone'):
 			node['stats'] = legion_passive_effects[alt_keystone]
 		elif node['name'] in ['Intelligence', 'Strength', 'Dexterity']:
@@ -199,7 +206,13 @@ def process_elegant_hubris(jewel_data: dict, tree: dict, radius: int) -> dict:
 		node = tree['nodes'][str(node_hash)]
 		node['isConquered'] = True
 		if node.get('isNotable'):
-			node['stats'] = legion_passive_effects[mapping[node['name']]]
+			if node['name'] not in mapping:
+				warnings.warn(
+					f'Passive Skill "{node["name"]}" could not be parsed.\n'
+					f'Please make sure that the displayed aura effect is correct and adjust it, if necessary'
+				)
+			else:
+				node['stats'] = legion_passive_effects[mapping[node['name']]]
 		elif node.get('isKeystone'):
 			node['stats'] = legion_passive_effects[alt_keystone]
 		else:
