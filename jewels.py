@@ -1,10 +1,9 @@
 import math
 import re
-import warnings
 
-import data
+from data import timeless_node_mapping, TimelessJewelType, legion_passive_mapping
 
-legion_passive_effects = data.legion_passive_mapping()
+legion_passive_effects = legion_passive_mapping()
 notable_hashes_for_jewels = [
 	'26725', '36634', '33989', '41263', '60735', '61834', '31683', '28475', '6230', '48768', '34483', '7960',
 	'46882', '55190', '61419', '2491', '54127', '32763', '26196', '33631', '21984', '29712', '48679', '9408',
@@ -110,9 +109,11 @@ def scale_numbers_in_string(string: str, scaling_factor: float) -> str:
 def process_transforming_jewels(tree, skills, stats, character):
 	jewel_priority = {
 		# Timeless jewels need to be processed first, since they block other jewels from modifying notables in radius
+		'Glorious Vanity': 1,
+		'Lethal Pride': 1,
+		'Brutal Restraint': 1,
 		'Militant Faith': 1,
 		'Elegant Hubris': 1,
-		'Glorious Vanity': 1,
 		# To avoid rounding errors, healthy mind is processed before other jewels
 		# example:
 		# - '5% increased max life' -> healthy mind -> 10% -> might of the meek -> 15%
@@ -128,13 +129,9 @@ def process_transforming_jewels(tree, skills, stats, character):
 	special_jewels.sort(key=lambda x: x[1])
 
 	for jewel, _ in special_jewels:
-		if jewel['name'] == 'Militant Faith':
-			tree = process_militant_faith(jewel, tree, get_radius(jewel, skills))
+		if jewel['typeLine'] == 'Timeless Jewel':
+			tree = process_timeless_jewel(jewel, tree, get_radius(jewel, skills))
 			stats.militant_faith_aura_effect = '1% increased effect of Non-Curse Auras per 10 Devotion' in jewel['explicitMods']
-		elif jewel['name'] == 'Elegant Hubris':
-			tree = process_elegant_hubris(jewel, tree, get_radius(jewel, skills))
-		elif jewel['name'] == 'Glorious Vanity':
-			warnings.warn("Aura Effect from Glorious Vanity is not supported. Please enter Aura effect manually.")
 		elif jewel['name'] == 'Healthy Mind':
 			tree = process_healthy_mind(jewel, tree, get_radius(jewel, skills))
 		elif jewel['name'] == 'Split Personality':
@@ -163,61 +160,97 @@ def process_unnatural_instinct(jewel_data: dict, tree: dict, skill_hashes: list[
 	return tree, skill_hashes
 
 
-def process_militant_faith(jewel_data: dict, tree: dict, radius: int) -> dict:
-	jewel = tree['nodes'][notable_hashes_for_jewels[jewel_data['x']]]
-	m = re.search(r'Carved to glorify (\d+) new faithful converted by High Templar (.*)', jewel_data['explicitMods'][0])
-	alt_keystone = {
-		'Avarius': 'Power of Purpose',
-		'Dominus': 'Inner Conviction',
-		'Maxarius': 'Transcendence'
-	}[m.group(2)]
-	mapping = data.militant_faith_node_mapping(m.group(1))
-	for node_hash in nodes_in_radius(jewel, radius, tree):
+def process_timeless_jewel(jewel_data: dict, tree: dict, radius: int) -> dict:
+	jewel = TimelessJewel(jewel_data['explicitMods'][0])
+	for node_hash in nodes_in_radius(tree['nodes'][notable_hashes_for_jewels[jewel_data['x']]], radius, tree):
 		node = tree['nodes'][str(node_hash)]
-		node['isConquered'] = True
-		if node.get('isNotable') and mapping[node['name']] != 'base_devotion':
-			# todo: Find a source for post 3.20 timeless jewel mappings
-			if node['name'] not in mapping:
-				warnings.warn(
-					f'Passive Skill "{node["name"]}" could not be parsed.\n'
-					f'Please make sure that the displayed aura effect is correct and adjust it, if necessary'
-				)
-			else:
-				node['stats'] = legion_passive_effects[mapping[node['name']]]
-		elif node.get('isKeystone'):
-			node['stats'] = legion_passive_effects[alt_keystone]
+		jewel.transform(node)
+	return tree
+
+
+alt_keystones = {
+	'Ahuana': "Immortal Ambition",
+	'Doryani': 'Corrupted Soul',
+	'Xibaqua': 'Divine Flesh',
+	'Akoya': 'Chainbreaker',
+	'Kaom': 'Strength of Blood',
+	'Rakiata': 'Tempered by War',
+	'Asenath': 'Dance with Death',
+	'Balbala': 'The Traitor',
+	'Nasima': 'Second Sight',
+	'Avarius': 'Power of Purpose',
+	'Dominus': 'Inner Conviction',
+	'Maxarius': 'Transcendence',
+	'Cadiro': 'Supreme Decadence',
+	'Caspiro': 'Supreme Ostentation',
+	'Victario': 'Supreme Grandstanding'
+}
+
+
+class TimelessJewel:
+	def __init__(self, first_line):
+		if m := re.search(r'Bathed in the blood of (\d+) sacrificed in the name of (.*)', first_line):
+			self.jewel_type = TimelessJewelType.GLORIOUS_VANITY
+		elif m := re.search(r'Commissioned (\d+) coins to commemorate (.*)', first_line):
+			self.jewel_type = TimelessJewelType.ELEGANT_HUBRIS
+		elif m := re.search(r'Carved to glorify (\d+) new faithful converted by High Templar (.*)', first_line):
+			self.jewel_type = TimelessJewelType.MILITANT_FAITH
+		elif m := re.search(r'Commanded leadership over (\d+) warriors under (.*)', first_line):
+			self.jewel_type = TimelessJewelType.LETHAL_PRIDE
+		elif m := re.search(r'Denoted service of (\d+) dekhara in the akhara of (.*)', first_line):
+			self.jewel_type = TimelessJewelType.BRUTAL_RESTRAINT
+		else:
+			raise Exception("Timeless Jewel could not be parsed")
+		self.seed = int(m.group(1))
+		self.version = m.group(2)
+		self.mapping = timeless_node_mapping(self.seed, self.jewel_type)
+
+	def transform(self, node):
+		if node['name'].endswith('Mastery') or node.get('isJewelSocket') or node.get('classStartIndex'):
+			return
+		node["isConquered"] = True
+		if node.get('isKeystone'):
+			self._transform_keystone(node)
+		elif node.get('isNotable'):
+			self._transform_notable(node)
 		elif node['name'] in ['Intelligence', 'Strength', 'Dexterity']:
-			node['stats'] = ['+10 to Devotion']
+			self._transform_small_attribute(node)
 		else:
-			node['stats'].append('+5 to Devotion')
-	return tree
+			self._transform_small_passive(node)
 
-
-def process_elegant_hubris(jewel_data: dict, tree: dict, radius: int) -> dict:
-	m = re.search(r'Commissioned (\d+) coins to commemorate (.*)', jewel_data['explicitMods'][0])
-	alt_keystone = {
-		'Cadiro': 'Supreme Decadence',
-		'Caspiro': 'Supreme Ostentation',
-		'Victario': 'Supreme Grandstanding'
-	}[m.group(2)]
-	jewel = tree['nodes'][notable_hashes_for_jewels[jewel_data['x']]]
-	mapping = data.elegant_hubris_node_mapping(m.group(1))
-	for node_hash in nodes_in_radius(jewel, radius, tree):
-		node = tree['nodes'][str(node_hash)]
-		node['isConquered'] = True
-		if node.get('isNotable'):
-			if node['name'] not in mapping:
-				warnings.warn(
-					f'Passive Skill "{node["name"]}" could not be parsed.\n'
-					f'Please make sure that the displayed aura effect is correct and adjust it, if necessary'
-				)
-			else:
-				node['stats'] = legion_passive_effects[mapping[node['name']]]
-		elif node.get('isKeystone'):
-			node['stats'] = legion_passive_effects[alt_keystone]
+	def _transform_notable(self, node):
+		alt_mods = self.mapping[node["skill"]]
+		if alt_mods["replaced"]:
+			node["stats"] = alt_mods["mods"]
 		else:
-			node['stats'] = []
-	return tree
+			node["stats"] += alt_mods["mods"]
+
+	def _transform_keystone(self, node):
+		node["stats"] = legion_passive_effects[alt_keystones[self.version]]
+
+	def _transform_small_attribute(self, node):
+		if self.jewel_type == TimelessJewelType.GLORIOUS_VANITY:
+			self._transform_notable(node)
+		elif self.jewel_type == TimelessJewelType.ELEGANT_HUBRIS:
+			node["stats"] = []
+		elif self.jewel_type == TimelessJewelType.MILITANT_FAITH:
+			node["stats"] = ["+10 to Devotion"]
+		elif self.jewel_type == TimelessJewelType.LETHAL_PRIDE:
+			node["stats"] += ["+2 to Strength"]
+		elif self.jewel_type == TimelessJewelType.BRUTAL_RESTRAINT:
+			node["stats"] = ["+2 to Dexterity"]
+
+	def _transform_small_passive(self, node):
+		if self.jewel_type == TimelessJewelType.GLORIOUS_VANITY:
+			self._transform_notable(node)
+		elif self.jewel_type == TimelessJewelType.ELEGANT_HUBRIS:
+			node["stats"] = []
+		elif self.jewel_type == TimelessJewelType.MILITANT_FAITH:
+			node["stats"] += ["+5 to Devotion"]
+		elif self.jewel_type == TimelessJewelType.LETHAL_PRIDE:
+			node["stats"] += ["+4 to Strength"]
+		elif self.jewel_type == TimelessJewelType.BRUTAL_RESTRAINT:
+			node["stats"] = ["+4 to Dexterity"]
 
 
 def process_healthy_mind(jewel_data: dict, tree: dict, radius: int) -> dict:
