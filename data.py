@@ -95,7 +95,7 @@ def timeless_node_mapping(seed: int, jewel_type: TimelessJewelType) -> dict:
 		for i in range(1, len(ap), 2):
 			list_of_stats.add(stats[int(ap[i])])
 			mods.append((stats[int(ap[i])], int(ap[i + 1])))
-		mapping[p] = {"replaced": bool(ap[0]), "mods": mods}
+		mapping[p] = {"replaced": bool(int(ap[0])), "mods": mods}
 
 	with open("data/passive_skill.json", "r") as file:
 		data = json.loads(file.read())
@@ -115,7 +115,11 @@ def timeless_node_mapping(seed: int, jewel_type: TimelessJewelType) -> dict:
 					break
 			else:
 				warnings.warn(f"Could not resolve mod {mod}")
-			resolved_mods.append(translation["string"].format(mod[1]))
+			form = translation["format"][0]
+			if form == "ignore":
+				resolved_mods.append(translation["string"])
+			else:
+				resolved_mods.append(translation["string"].format(form.replace("#", str(mod[1]))))
 		alt_passive["mods"] = resolved_mods
 
 	return mapping
