@@ -27,8 +27,11 @@ jobs:
         wget -q https://raw.githubusercontent.com/ltogniolli/RePoE/master/RePoE/data/stat_translations/aura_skill.json
         wget -q https://raw.githubusercontent.com/ltogniolli/RePoE/master/RePoE/data/stat_translations/curse_skill.json
         wget -q https://raw.githubusercontent.com/ltogniolli/RePoE/master/RePoE/data/stat_translations/passive_skill.json
-        wget -q https://github.com/Liberatorist/TimelessEmulator/blob/master/TimelessEmulator/Build/Output/TimelessJewels/elegant_hubris.zip
-        wget -q https://github.com/Liberatorist/TimelessEmulator/blob/master/TimelessEmulator/Build/Output/TimelessJewels/elegant_hubris_passives.txt
+        wget -q https://raw.githubusercontent.com/PathOfBuildingCommunity/PathOfBuilding/dev/src/Data/LegionPassives.lua
+        mkdir TimelessJewels
+        cd TimelessJewels
+        wget -q https://github.com/Liberatorist/TimelessEmulator/blob/master/TimelessEmulator/Build/Output/TimelessJewels/glorious_vanity.zip
+        wget -q https://github.com/Liberatorist/TimelessEmulator/blob/master/TimelessEmulator/Build/Output/TimelessJewels/glorious_vanity_passives.txt
         wget -q https://github.com/Liberatorist/TimelessEmulator/blob/master/TimelessEmulator/Build/Output/TimelessJewels/brutal_restraint.zip
         wget -q https://github.com/Liberatorist/TimelessEmulator/blob/master/TimelessEmulator/Build/Output/TimelessJewels/brutal_restraint_passives.txt
         wget -q https://github.com/Liberatorist/TimelessEmulator/blob/master/TimelessEmulator/Build/Output/TimelessJewels/elegant_hubris.zip
@@ -38,6 +41,5 @@ jobs:
         wget -q https://github.com/Liberatorist/TimelessEmulator/blob/master/TimelessEmulator/Build/Output/TimelessJewels/lethal_pride.zip
         wget -q https://github.com/Liberatorist/TimelessEmulator/blob/master/TimelessEmulator/Build/Output/TimelessJewels/lethal_pride_passives.txt
         wget -q https://github.com/Liberatorist/TimelessEmulator/blob/master/TimelessEmulator/Build/Output/TimelessJewels/stats.txt
-        wget -q https://raw.githubusercontent.com/PathOfBuildingCommunity/PathOfBuilding/dev/src/Data/LegionPassives.lua
     - name: tests
       run: python3 -m unittest --verbose

@@ -56,13 +56,6 @@ def legion_passive_mapping() -> dict:
 		return {node['dn']: node['sd'].values() for node in content_dict['nodes'].values()}
 
 
-def unzip_timeless_jewel_data():
-	if not os.path.exists("data/TimelessJewels"):
-		os.makedirs("data/TimelessJewels")
-		with zipfile.ZipFile(r'data/TimelessJewels.zip') as archive:
-			archive.extractall("data/TimelessJewels")
-
-
 class TimelessJewelType(Enum):
 	GLORIOUS_VANITY = "glorious_vanity"
 	LETHAL_PRIDE = "lethal_pride"
@@ -72,8 +65,6 @@ class TimelessJewelType(Enum):
 
 
 def timeless_node_mapping(seed: int, jewel_type: TimelessJewelType) -> dict:
-	unzip_timeless_jewel_data()
-
 	with zipfile.ZipFile(f'data/TimelessJewels/{jewel_type.value}.zip') as archive:
 		with archive.open(f'{seed}.csv', 'r') as infile:
 			alt_passives = [
