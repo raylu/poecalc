@@ -30,7 +30,7 @@ jobs:
         wget -q https://raw.githubusercontent.com/ltogniolli/RePoE/master/RePoE/data/stat_translations/curse_skill.json
         wget -q https://raw.githubusercontent.com/ltogniolli/RePoE/master/RePoE/data/stat_translations/passive_skill.json
         wget -q https://raw.githubusercontent.com/PathOfBuildingCommunity/PathOfBuilding/dev/src/Data/LegionPassives.lua
-        wget -q https://github.com/Liberatorist/TimelessEmulator/blob/master/TimelessEmulator/Build/Output/TimelessJewels/TimelessJewels.zip?raw=true
+        wget -q https://raw.githubusercontent.com/Liberatorist/TimelessEmulator/master/TimelessEmulator/Build/Output/TimelessJewels/TimelessJewels.zip
         unzip TimelessJewels.zip -d TimelessJewels
     - name: tests
       run: python3 -m unittest --verbose
