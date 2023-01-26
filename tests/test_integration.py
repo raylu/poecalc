@@ -1,3 +1,4 @@
+import os
 import unittest
 
 import data
@@ -256,3 +257,24 @@ class TestAuras(unittest.TestCase):
 
 		# no supports
 		assert len(vulnerability.supports) == 0
+
+	def test_data_is_present(self):
+		assert os.path.exists("data")
+		assert os.path.exists("data/aura_skill.json")
+		assert os.path.exists("data/curse_skill.json")
+		assert os.path.exists("data/passive_skill.json")
+		assert os.path.exists("data/gems.json")
+		assert os.path.exists("data/LegionPassives.lua")
+		assert os.path.exists("data/TimelessJewels.zip")
+		assert os.path.exists("data/TimelessJewels")
+		assert os.path.exists("data/TimelessJewels/brutal_restraint.zip")
+		assert os.path.exists("data/TimelessJewels/brutal_restraint_passives.txt")
+		assert os.path.exists("data/TimelessJewels/elegant_hubris.zip")
+		assert os.path.exists("data/TimelessJewels/elegant_hubris_passives.txt")
+		assert os.path.exists("data/TimelessJewels/glorious_vanity.zip")
+		assert os.path.exists("data/TimelessJewels/glorious_vanity_passives.txt")
+		assert os.path.exists("data/TimelessJewels/lethal_pride.zip")
+		assert os.path.exists("data/TimelessJewels/lethal_pride_passives.txt")
+		assert os.path.exists("data/TimelessJewels/militant_faith.zip")
+		assert os.path.exists("data/TimelessJewels/militant_faith_passives.txt")
+		assert os.path.exists("data/TimelessJewels/stats.txt")
