@@ -19,6 +19,8 @@ jobs:
         python-version: '3.x'
     - name: install
       run: pip3 install --quiet --requirement requirements.txt
+    - name: install unzip module
+      run: sudo apt-get install unzip
     - name: download data
       run: |
         mkdir data
@@ -29,5 +31,6 @@ jobs:
         wget -q https://raw.githubusercontent.com/ltogniolli/RePoE/master/RePoE/data/stat_translations/passive_skill.json
         wget -q https://raw.githubusercontent.com/PathOfBuildingCommunity/PathOfBuilding/dev/src/Data/LegionPassives.lua
         wget -q https://github.com/Liberatorist/TimelessEmulator/blob/master/TimelessEmulator/Build/Output/TimelessJewels/TimelessJewels.zip?raw=true
+        unzip TimelessJewels.zip -d TimelessJewels
     - name: tests
       run: python3 -m unittest --verbose
