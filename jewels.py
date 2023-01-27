@@ -63,7 +63,7 @@ class TreeGraph:
 		return path_length
 
 
-def passive_node_coordinates(node: dict, tree: dict) -> (float, float):
+def passive_node_coordinates(node: dict, tree: dict) -> tuple[float, float]:
 	if 'group' not in node:
 		raise ValueError(f'Cannot determine coordinates for passive node "{node}"')
 	orbit_radius = tree['constants']['orbitRadii'][node['orbit']]
