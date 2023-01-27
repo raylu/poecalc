@@ -117,12 +117,8 @@ def passive_skill_tree() -> tuple[dict, dict]:
 		# deepcopy to prevent modifications to the original dictionary
 		return deepcopy(tree_dict), masteries_dict
 
-	r = client.get('https://www.pathofexile.com/passive-skill-tree')
-	r.raise_for_status()
-	tree = r.text[r.text.index('passiveSkillTreeData'):]
-	tree = tree[tree.index('{'):]
-	tree = tree[:tree.index('};') + 1]
-	tree_dict = json.loads(tree)
+	with open('data/skill_tree.json', 'r') as file:
+		tree_dict = json.load(file)
 
 	masteries_dict = {}
 	for node in tree_dict['nodes'].values():
