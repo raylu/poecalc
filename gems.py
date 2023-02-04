@@ -3,7 +3,10 @@ import re
 import warnings
 from copy import copy
 from enum import Enum
-from typing import Union
+from typing import Union, Tuple, Optional, List, TYPE_CHECKING
+if TYPE_CHECKING:
+	from stats import Stats
+
 import data
 
 all_gems, aura_translation, curse_translation = data.load()
@@ -17,16 +20,16 @@ class GemQualityType(Enum):
 
 
 class Gem:
-	name: str
+	_name: str
 	original_name: str
 	level: int
 	quality: int
-	socket: int
+	socket: Optional[int]
 	tags: set
 	quality_type: GemQualityType
 	additional_effects: list
 
-	def __init__(self, gem_dict: dict, socket: int) -> None:
+	def __init__(self, gem_dict: dict, socket: Optional[int]) -> None:
 		self.name = gem_dict['baseType']
 		self.original_name = self.name
 		self.level = 1
@@ -39,9 +42,11 @@ class Gem:
 
 		for prop in gem_dict['properties']:
 			if prop['name'] == 'Level':
-				self.level = int(re.search(r'(\d+)', prop['values'][0][0]).group(1))
+				if m := re.search(r'(\d+)', prop['values'][0][0]):
+					self.level = int(m.group(1))
 			elif prop['name'] == 'Quality':
-				self.quality = int(re.search(r'(\d+)', prop['values'][0][0]).group(1))
+				if m := re.search(r'(\d+)', prop['values'][0][0]):
+					self.quality = int(m.group(1))
 
 		self.quality_type = GemQualityType.Superior
 		for quality_type in GemQualityType:
@@ -79,10 +84,10 @@ class Gem:
 			return all_gems[self.original_name]
 		return all_gems[self.name]
 
-	def quality_effect(self, vaal_effect) -> list:
+	def quality_effect(self, vaal_effect: bool) -> list:
 		return []
 
-	def __repr__(self):
+	def __repr__(self) -> str:
 		attrs = ', '.join(f'{k}={repr(v)}' for k, v in self.__dict__.items())
 		return f'{self.__class__.__name__}({attrs})'
 
@@ -93,14 +98,14 @@ class SupportGem(Gem):
 	added_types: set
 	support_gems_only: bool
 
-	def __init__(self, gem_dict: dict, socket: int) -> None:
+	def __init__(self, gem_dict: dict, socket: Optional[int]) -> None:
 		super().__init__(gem_dict, socket)
 		self.allowed_types = {gem_type.lower() for gem_type in self.get_gem_data()['support_gem']['allowed_types']}
 		self.excluded_types = {gem_type.lower() for gem_type in self.get_gem_data()['support_gem']['excluded_types']}
 		self.support_gems_only = self.get_gem_data()['support_gem']['supports_gems_only'] or (socket is None)
 		self.added_types = {gem_type.lower() for gem_type in self.get_gem_data()['support_gem'].get('added_types', [])}
 
-	def can_support(self, active_skill_gem: Gem, item):
+	def can_support(self, active_skill_gem: Gem, item: dict) -> bool:
 		if not self.is_linked_to(active_skill_gem, item):
 			return False
 		if self.support_gems_only and active_skill_gem.socket is None:
@@ -113,7 +118,7 @@ class SupportGem(Gem):
 				return False
 		return len(active_skill_gem.tags & self.excluded_types) == 0
 
-	def is_linked_to(self, active_gem, item):
+	def is_linked_to(self, active_gem: Gem, item: dict) -> bool:
 		if self.socket is None and active_gem.socket is None:
 			# Supports from items can only support socketed gems
 			return False
@@ -124,7 +129,7 @@ class SupportGem(Gem):
 		linked_sockets = [i for i, socket in enumerate(item['sockets']) if socket['group'] == group]
 		return active_gem.socket in linked_sockets
 
-	def quality_effect(self, vaal_effect) -> list:
+	def quality_effect(self, vaal_effect: bool) -> List[Tuple[str, int]]:
 		gem_data = self.get_gem_data()
 		if not gem_data['static']['quality_stats']:
 			return []
@@ -140,7 +145,7 @@ class SkillGem(Gem):
 	mine_limit: int
 	supports: list
 
-	def __init__(self, gem_dict: dict, socket: int) -> None:
+	def __init__(self, gem_dict: dict, socket: Optional[int]) -> None:
 		super().__init__(gem_dict, socket)
 		if 'hybrid' in gem_dict:
 			self.original_name = gem_dict['hybrid']['baseTypeName']
@@ -153,7 +158,7 @@ class SkillGem(Gem):
 		self.tags |= {gem_type.lower() for gem_type in self.get_gem_data()['active_skill']['types']}
 		self.tags.add(self.name.lower())
 
-	def get_curse_effect(self):
+	def get_curse_effect(self) -> int:
 		inc = 0
 		more = 0
 		if 'curse' in self.tags:
@@ -163,7 +168,7 @@ class SkillGem(Gem):
 			more += self.more_hex_effect
 		return round(((1 + inc / 100) * (1 + more / 100) - 1) * 100)
 
-	def add_effects(self, character_stats) -> None:
+	def add_effects(self, character_stats: 'Stats') -> None:
 		self.aura_effect += character_stats.aura_effect + character_stats.specific_aura_effect[self.name]
 		if 'auraaffectsenemies' in self.tags:
 			self.aura_effect += character_stats.aura_effect_on_enemies
@@ -174,7 +179,7 @@ class SkillGem(Gem):
 		self.more_hex_effect += character_stats.more_hex_effect
 		self.mine_limit += character_stats.mine_limit
 
-	def quality_effect(self, vaal_effect) -> list:
+	def quality_effect(self, vaal_effect: bool) -> List[Tuple[str, int]]:
 		gem_data = self.get_gem_data(False)
 		if not gem_data['static']['quality_stats']:
 			return []
@@ -194,12 +199,13 @@ class SkillGem(Gem):
 	def applies_to_allies(self) -> bool:
 		return 'aura' in self.tags and 'auraaffectsenemies' not in self.tags
 
-	def get_active_supports(self, support_gems: list[SupportGem], item) -> set[SupportGem]:
+	def get_active_supports(self, support_gems: list[SupportGem], item: dict) -> set[SupportGem]:
 		"""Adds additional Tags from support gems to the active skill gems and filters out support skills that don't apply"""
 		old_tags = None
 		active_supports = set()
 		# as some supports can only support gems with specific tags, this has to be done iteratively
-		# example: Arrogance can only support aura skills with reservation, Blasphemy adds an aura and reservation tags to a hex skill
+		# example: Arrogance can only support aura skills with reservation,
+		# Blasphemy adds an aura and reservation tags to a hex skill
 		while old_tags != self.tags:
 			old_tags = self.tags
 			for support_gem in support_gems:
@@ -209,7 +215,7 @@ class SkillGem(Gem):
 				self.tags |= support_gem.added_types
 		return active_supports
 
-	def apply_support(self, support_gem: SupportGem):
+	def apply_support(self, support_gem: SupportGem) -> None:
 		has_effect = False
 		for stat, value in support_gem.iterate_effects():
 			if stat == 'non_curse_aura_effect_+%':
@@ -236,8 +242,8 @@ class SkillGem(Gem):
 			self.supports.append(support_gem)
 
 	def get_aura(self, get_vaal_effect: bool) -> list[str]:
-		aura_result = []
-		previous_value = []
+		aura_result: list[str] = []
+		previous_value: list[float] = []
 		for stat, value in self.iterate_effects(get_vaal_effect):
 			formatted_text, previous_value = self.translate_effect(stat, value, previous_value, self.aura_effect,
 																   aura_translation)
@@ -267,8 +273,8 @@ class SkillGem(Gem):
 		return [header] + aura_result
 
 	def get_curse(self) -> list[str]:
-		curse_result = []
-		previous_value = []
+		curse_result: list[str] = []
+		previous_value: list[float] = []
 		for stat, value in self.iterate_effects():
 			formatted_text, previous_value = self.translate_effect(stat, value, previous_value, self.get_curse_effect(),
 																   curse_translation)
@@ -325,21 +331,32 @@ class SkillGem(Gem):
 		return [header] + curse_result
 
 	def get_mine(self) -> list[str]:
-		mine_result = []
-		previous_value = []
+		mine_result: list[str] = []
+		previous_value: list[float] = []
 		for stat, value in self.iterate_effects():
 			formatted_text, previous_value = self.translate_effect(stat, value, previous_value, self.aura_effect,
 																   aura_translation)
 			if not formatted_text:
 				continue
-			if m := re.search(r'Each Mine applies (\d+)% increased Damage Taken to Enemies near it, up\nto a maximum of (\d+)%', formatted_text):
-				mine_result.append(f'Nearby Enemies take {min(int(m.group(1)) * self.mine_limit, int(m.group(2)))}% increased damage')
-			elif m := re.search(r'Each Mine applies (\d+)% chance to deal Double Damage to Hits against Enemies near it, up to a maximum of (\d+)%', formatted_text):
-				mine_result.append(f'{min(int(m.group(1)) * self.mine_limit, int(m.group(2)))}% chance to deal double Damage')
-			elif m := re.search(r'Each Mine applies (\d+)% increased Critical Strike Chance to Hits against Enemies near it, up to a maximum of (\d+)%', formatted_text):
-				mine_result.append(f'{min(int(m.group(1)) * self.mine_limit, int(m.group(2)))}% increased Critical Strike Chance')
-			elif m := re.search(r'Each Mine Adds (\d+) to (\d+) Fire Damage to Hits against Enemies near it, up to a maximum of (\d+) to (\d+)', formatted_text):
-				mine_result.append(f'{min(int(m.group(1)) * self.mine_limit, int(m.group(3)))} to {min(int(m.group(2)) * self.mine_limit, int(m.group(4)))} added Fire Damage')
+			if m := re.search(r'Each Mine applies (\d+)% increased Damage Taken to Enemies '
+							  r'near it, up\nto a maximum of (\d+)%', formatted_text):
+				value = min(int(m.group(1)) * self.mine_limit, int(m.group(2)))
+				mine_result.append(f'Nearby Enemies take {value}% increased damage')
+			elif m := re.search(r'Each Mine applies (\d+)% chance to deal Double Damage to Hits against Enemies '
+								r'near it, up to a maximum of (\d+)%', formatted_text):
+				value = min(int(m.group(1)) * self.mine_limit, int(m.group(2)))
+				mine_result.append(f'{value}% chance to deal double Damage')
+			elif m := re.search(r'Each Mine applies (\d+)% increased Critical Strike Chance to Hits against Enemies '
+								r'near it, up to a maximum of (\d+)%', formatted_text):
+				value = min(int(m.group(1)) * self.mine_limit, int(m.group(2)))
+				mine_result.append(f'{value}% increased Critical Strike Chance')
+			elif m := re.search(r'Each Mine Adds (\d+) to (\d+) Fire Damage to Hits against Enemies '
+								r'near it, up to a maximum of (\d+) to (\d+)', formatted_text):
+				values = (
+					min(int(m.group(1)) * self.mine_limit, int(m.group(3))),
+					min(int(m.group(2)) * self.mine_limit, int(m.group(4)))
+				)
+				mine_result.append(f'{values[0]} to {values[1]} added Fire Damage')
 
 		if self.supports:
 			support_comment = '(' + ', '.join(f'{sup.name} {sup.level}' for sup in self.supports) + ')'
@@ -352,7 +369,8 @@ class SkillGem(Gem):
 		return [header] + mine_result
 
 	@staticmethod
-	def translate_effect(effect_id, effect_value, previous_effect_values, scaling_factor, translation_dict):
+	def translate_effect(effect_id: str, effect_value: int, previous_effect_values: list[float], scaling_factor: int,
+						 translation_dict: dict) -> Tuple[str, list[float]]:
 		"""Finds the correct translation for an effect depending on the effects value"""
 		if effect_id not in translation_dict:
 			return '', []
@@ -394,7 +412,8 @@ def item_gem_dict(mod_string: str) -> dict:
 			'properties': [{'name': 'Level', 'values': [[str(level)]]}, {'name': 'Quality', 'values': [['+0%']]}]}
 
 
-def scaled_value(value: int, factor: int, index_handlers: list[str]) -> Union[int, float]:
+def scaled_value(initial_value: int, factor: int, index_handlers: list[str]) -> Union[int, float]:
+	value = float(initial_value)
 	allow_float = False
 	for handler in index_handlers:
 		if handler == 'per_minute_to_per_second':
@@ -422,7 +441,7 @@ def scaled_value(value: int, factor: int, index_handlers: list[str]) -> Union[in
 	return value
 
 
-def parse_skills_in_item(item: dict, char_stats) -> list[SkillGem]:
+def parse_skills_in_item(item: dict, char_stats: 'Stats') -> list[SkillGem]:
 	socketed_items = item.get('socketedItems', [])
 	active_skills = []
 	support_gems = []

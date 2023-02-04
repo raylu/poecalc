@@ -2,7 +2,7 @@ from dataclasses import dataclass, field
 import json
 import re
 from collections import defaultdict
-from copy import deepcopy
+from typing import Tuple, List, Iterator
 
 import httpx
 import gems
@@ -18,8 +18,8 @@ class Stats:
 	strength: int = 0
 	dexterity: int = 0
 	intelligence: int = 0
-	specific_aura_effect: defaultdict[int] = field(default_factory=lambda: defaultdict(int))
-	specific_curse_effect: defaultdict[int] = field(default_factory=lambda: defaultdict(int))
+	specific_aura_effect: defaultdict[str, int] = field(default_factory=lambda: defaultdict(int))
+	specific_curse_effect: defaultdict[str, int] = field(default_factory=lambda: defaultdict(int))
 	increased_life: int = 0
 	mana: int = 0
 	flat_mana: int = 0
@@ -45,7 +45,7 @@ client = httpx.Client(timeout=15)
 client.headers['User-Agent'] = 'Mozilla/5.0 (X11; Linux x86_64; rv:102.0) Gecko/20100101 Firefox/102.0'
 
 
-def fetch_stats(account, character_name) -> tuple[Stats, dict, dict]:
+def fetch_stats(account: str, character_name: str) -> tuple[Stats, dict, dict]:
 	params = {'accountName': account, 'character': character_name, 'realm': 'pc'}
 	r = client.post('https://www.pathofexile.com/character-window/get-items', data=params)
 	r.raise_for_status()
@@ -69,15 +69,15 @@ def fetch_stats(account, character_name) -> tuple[Stats, dict, dict]:
 	tree, skills, stats = jewels.process_transforming_jewels(tree, skills, stats, character)
 
 	for item in character['items']:
-		_parse_item(stats, item)
+		_parse_item(stats, item, tree)
 	for item in skills['items']:  # jewels
 		if 'Cluster Jewel' in item['typeLine']:  # skip cluster jewel base node
 			continue
-		_parse_item(stats, item)
+		_parse_item(stats, item, tree)
 	for notable_hash in stats.additional_notables:
 		skills['hashes'].append(notable_hash)
 	for _, node_stats in iter_passives(tree, masteries, skills):
-		_parse_mods(stats, node_stats)
+		_parse_mods(stats, node_stats, tree)
 
 	if stats.militant_faith_aura_effect:
 		stats.aura_effect += stats.devotion // 10
@@ -90,7 +90,7 @@ def fetch_stats(account, character_name) -> tuple[Stats, dict, dict]:
 	return stats, character, skills
 
 
-def iter_passives(tree, masteries, skills):
+def iter_passives(tree: dict, masteries: dict, skills: dict) -> Iterator[Tuple[str, List[str]]]:
 	for h in skills['hashes']:
 		node = tree['nodes'][str(h)]
 		yield node['name'], node['stats']
@@ -108,16 +108,8 @@ def iter_passives(tree, masteries, skills):
 		yield node['name'], node['stats']
 
 
-tree_dict = masteries_dict = None
-
-
 def passive_skill_tree() -> tuple[dict, dict]:
-	global tree_dict, masteries_dict
-	if tree_dict is not None:
-		# deepcopy to prevent modifications to the original dictionary
-		return deepcopy(tree_dict), masteries_dict
-
-	with open('data/skill_tree.json', 'r') as file:
+	with open('data/skill_tree.json', 'r', encoding='utf8') as file:
 		tree_dict = json.load(file)
 
 	masteries_dict = {}
@@ -126,7 +118,7 @@ def passive_skill_tree() -> tuple[dict, dict]:
 			continue
 		for effect in node['masteryEffects']:
 			masteries_dict[effect['effect']] = {'name': node['name'], 'stats': effect['stats']}
-	return deepcopy(tree_dict), masteries_dict
+	return tree_dict, masteries_dict
 
 
 matchers = [(re.compile(pattern), attr) for pattern, attr in [
@@ -156,15 +148,15 @@ matchers = [(re.compile(pattern), attr) for pattern, attr in [
 ]]
 
 
-def _parse_item(stats: Stats, item: dict):
-	_parse_mods(stats, jewels.process_abyss_jewels(item))
+def _parse_item(stats: Stats, item: dict, tree: dict) -> None:
+	_parse_mods(stats, jewels.process_abyss_jewels(item), tree)
 	for modlist in ['implicitMods', 'explicitMods', 'craftedMods', 'fracturedMods', 'enchantMods']:
 		if modlist not in item:
 			continue
-		_parse_mods(stats, item[modlist])
+		_parse_mods(stats, item[modlist], tree)
 
 
-def _parse_mods(stats: Stats, mods: list) -> None:
+def _parse_mods(stats: Stats, mods: List[str], tree: dict) -> None:
 	for mod in mods:
 		for regex, attr in matchers:
 			m = regex.search(mod)
@@ -185,12 +177,12 @@ def _parse_mods(stats: Stats, mods: list) -> None:
 					notable = m.group(1)
 					if ' if you have the matching modifier on' in notable:
 						notable = notable.split(' if you have the matching modifier on')[0]
-					stats.additional_notables |= {hash_for_notable(notable)}
+					stats.additional_notables |= {hash_for_notable(notable, tree)}
 					continue
 
 				if attr == 'alt_quality_bonus':
 					# TODO: handle quality % on item
-					_parse_mods(stats, [jewels.scale_numbers_in_string(m.group(1), 20 // int(m.group(2)))])
+					_parse_mods(stats, [jewels.scale_numbers_in_string(m.group(1), 20 // int(m.group(2)))], tree)
 					continue
 
 				if attr == 'inc_curse_effect':
@@ -215,10 +207,10 @@ def _parse_mods(stats: Stats, mods: list) -> None:
 				setattr(stats, attr, getattr(stats, attr) + value)
 
 
-def hash_for_notable(notable: str) -> str:
-	for hash, node in tree_dict['nodes'].items():
-		if hash == 'root':
+def hash_for_notable(notable: str, tree: dict) -> str:
+	for hash_value, node in tree['nodes'].items():
+		if hash_value == 'root':
 			continue
 		if node['name'] == notable:
-			return hash
+			return hash_value
 	raise FileNotFoundError(f'Notable "{notable}" could not be found in tree')
