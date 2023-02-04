@@ -397,7 +397,7 @@ def item_gem_dict(mod_string: str) -> dict:
 		name = m.group(2) + ' Support'
 		support = True
 		level = m.group(1)
-	elif m := re.match(r'Grants Level (\d+) Curse Aura', mod_string):
+	elif m := re.match(r'Grants Level (\d+) (.*) Curse Aura', mod_string):
 		name = m.group(2)
 		support = False
 		level = m.group(1)
