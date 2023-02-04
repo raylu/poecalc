@@ -1,22 +1,26 @@
 import os
 import unittest
+from typing import Optional
 
 import data
 from gems import GemQualityType, parse_skills_in_item
-from poecalc import analyzer
+from auras import Auras
 from stats import Stats, _parse_item
 
 gem_data, _, _ = data.load()
 
 
-def create_gem(name, level, quality, quality_type: GemQualityType = GemQualityType.Superior, socket: int = 0):
-	type_line = []
-	if len(gem_data[name]['static']['quality_stats']) <= quality_type.value:
-		return None
+def gem_can_have_alt_quality(name: str, quality_type: GemQualityType) -> bool:
+	return len(gem_data[name]['static']['quality_stats']) > quality_type.value
+
+
+def create_gem(name: str, level: int, quality: int, quality_type: GemQualityType = GemQualityType.Superior,
+			   socket: int = 0) -> dict:
+	type_line_list = []
 	if quality_type != GemQualityType.Superior:
-		type_line.append(quality_type.name)
-	type_line.append(name)
-	type_line = ' '.join(type_line)
+		type_line_list.append(quality_type.name)
+	type_line_list.append(name)
+	type_line = ' '.join(type_line_list)
 	return {
 		'typeLine': type_line,
 		'baseType': name,
@@ -24,12 +28,12 @@ def create_gem(name, level, quality, quality_type: GemQualityType = GemQualityTy
 			{'name': 'Level', 'values': [[str(level)]]},
 			{'name': 'Quality', 'values': [[str(quality)]]},
 		],
-		'support': "Support" in name,
+		'support': 'Support' in name,
 		'socket': socket,
 	}
 
 
-def create_item(mods, socketed_gems, links: list[list[int]] = None):
+def create_item(mods: list[str], socketed_gems: list[dict], links: Optional[list[list[int]]] = None) -> dict:
 	if links is not None:
 		sockets = []
 		group_counter = 0
@@ -50,7 +54,7 @@ def create_item(mods, socketed_gems, links: list[list[int]] = None):
 
 
 class TestAuras(unittest.TestCase):
-	def test_auras(self):
+	def test_auras(self) -> None:
 		"""Test that all aura gems are parsed properly without resulting in errors"""
 		char_stats = Stats()
 		gem_level = 20
@@ -61,18 +65,15 @@ class TestAuras(unittest.TestCase):
 				if str(gem_level) not in gem['per_level']:
 					continue
 				if 'Support' not in gem_name and gem['tags'] and 'aura' in gem['tags'] and 'mine' not in gem['tags']:
-					gem = create_gem(gem_name, gem_level, quality, quality_type)
-					if gem:
-						gem_list.append(gem)
+					if gem_can_have_alt_quality(gem_name, quality_type):
+						gem_item = create_gem(gem_name, gem_level, quality, quality_type)
+						gem_list.append(gem_item)
 			item = create_item([], gem_list)
 			active_skills = parse_skills_in_item(item, char_stats)
-			for gem in active_skills:
-				aura_text = gem.get_aura(True)
-				# for line in aura_text:
-				# 	print(line)
+			for skill_gem in active_skills:
+				skill_gem.get_aura(True)
 
-
-	def test_curses(self):
+	def test_curses(self) -> None:
 		"""Test that all curse gems are parsed properly without resulting in errors"""
 		char_stats = Stats()
 		gem_level = 20
@@ -83,17 +84,15 @@ class TestAuras(unittest.TestCase):
 				if str(gem_level) not in gem['per_level']:
 					continue
 				if 'Support' not in gem_name and gem['tags'] and 'aura' in gem['tags']:
-					gem = create_gem(gem_name, gem_level, quality, quality_type)
-					if gem:
-						gem_list.append(gem)
+					if gem_can_have_alt_quality(gem_name, quality_type):
+						gem_item = create_gem(gem_name, gem_level, quality, quality_type)
+						gem_list.append(gem_item)
 			item = create_item([], gem_list)
 			active_skills = parse_skills_in_item(item, char_stats)
-			for gem in active_skills:
-				curse_text = gem.get_curse()
-				# for line in curse_text:
-				# 	print(line)
+			for skill_gem in active_skills:
+				skill_gem.get_curse()
 
-	def test_mines(self):
+	def test_mines(self) -> None:
 		"""Test that all curse gems are parsed properly without resulting in errors"""
 		char_stats = Stats()
 		gem_level = 20
@@ -104,18 +103,15 @@ class TestAuras(unittest.TestCase):
 				if str(gem_level) not in gem['per_level']:
 					continue
 				if 'Support' not in gem_name and gem['tags'] and 'mine' in gem['tags']:
-					gem = create_gem(gem_name, gem_level, quality, quality_type)
-					if gem:
-						gem_list.append(gem)
+					if gem_can_have_alt_quality(gem_name, quality_type):
+						gem_item = create_gem(gem_name, gem_level, quality, quality_type)
+						gem_list.append(gem_item)
 			item = create_item([], gem_list)
 			active_skills = parse_skills_in_item(item, char_stats)
-			for gem in active_skills:
-				mine_text = gem.get_mine()
-				# for line in mine_text:
-				# 	print(line)
+			for skill_gem in active_skills:
+				skill_gem.get_mine()
 
-
-	def test_supports_for_auras(self):
+	def test_supports_for_auras(self) -> None:
 		char_stats = Stats()
 		gem_list = [
 			create_gem("Determination", 20, 20),
@@ -132,7 +128,7 @@ class TestAuras(unittest.TestCase):
 		assert determination.quality == 36  # 20 + 16 (3 Enhance)
 		assert determination.aura_effect == 78  # 0 + 44 (5 Awakened Generosity) + 34 (20 20 Divine Blessing)
 
-	def test_supports_for_mines(self):
+	def test_supports_for_mines(self) -> None:
 		char_stats = Stats()
 		char_stats.mine_aura_effect = 26
 		gem_list = [
@@ -147,9 +143,9 @@ class TestAuras(unittest.TestCase):
 		assert portal_mine.aura_effect == 50  # 26 (from character) + 24 (Arrogance Support)
 		assert portal_mine.mine_limit == 22  # 15 (base) + 3 (minefield) + 4 (20% divergent minefield)
 
-		assert analyzer.analyze_mines(char_stats, active_skills)[1][1] == '66% chance to deal double Damage'  # 2 * 1.5 * 22
+		assert Auras().analyze_mines(char_stats, active_skills)[1][1] == '66% chance to deal double Damage'  # 2 * 1.5 * 22
 
-	def test_supports_for_curses(self):
+	def test_supports_for_curses(self) -> None:
 		char_stats = Stats()
 		gem_list = [
 			create_gem("Despair", 20, 20),
@@ -165,8 +161,7 @@ class TestAuras(unittest.TestCase):
 		assert despair.quality == 36  # 20 + 16 (3 Enhance)
 		assert despair.get_curse_effect() == -7  # (100 + 24 (20 20 Arrogance Support)) * (100 - 25) (Blasphemy Support)
 
-
-	def test_global_mods_from_item(self):
+	def test_global_mods_rom_item(self) -> None:
 		char_stats = Stats()
 		item = create_item(
 			mods=[
@@ -183,7 +178,7 @@ class TestAuras(unittest.TestCase):
 			],
 			socketed_gems=[]
 		)
-		_parse_item(char_stats, item)
+		_parse_item(char_stats, item, {})
 		assert char_stats.flat_life == 20
 		assert char_stats.flat_mana == 20
 		assert char_stats.flat_str == 20
@@ -195,8 +190,7 @@ class TestAuras(unittest.TestCase):
 		assert char_stats.inc_curse_effect == 10
 		assert char_stats.more_curse_effect == 10
 
-
-	def test_local_mods_from_item(self):
+	def test_local_mods_from_item(self) -> None:
 		char_stats = Stats()
 		item = create_item(
 			mods=[
@@ -210,8 +204,8 @@ class TestAuras(unittest.TestCase):
 			],
 			socketed_gems=[create_gem('Despair', 20, 20)]
 		)
-		active_skills = parse_skills_in_item(item, char_stats)
-		despair, conductivity, vulnerability = active_skills
+		# pylint: disable=unbalanced-tuple-unpacking
+		despair, conductivity, vulnerability = parse_skills_in_item(item, char_stats)
 
 		assert despair.level == 23
 		assert despair.quality == 40
@@ -228,7 +222,7 @@ class TestAuras(unittest.TestCase):
 		assert not vulnerability.supports
 		assert vulnerability.get_curse_effect() == 48
 
-	def test_socket_links_for_supports(self):
+	def test_socket_links_for_supports(self) -> None:
 		char_stats = Stats()
 		item = create_item(
 			mods=[
@@ -244,6 +238,7 @@ class TestAuras(unittest.TestCase):
 			],
 			links=[[0, 1, 2], [3]]
 		)
+		# pylint: disable=unbalanced-tuple-unpacking
 		discipline, grace, determination, vulnerability = parse_skills_in_item(item, char_stats)
 
 		# supported by enhance, divine blessing and empower
@@ -258,11 +253,12 @@ class TestAuras(unittest.TestCase):
 		# no supports
 		assert len(vulnerability.supports) == 0
 
-	def test_data_is_present(self):
+	def test_data_is_present(self) -> None:
 		assert os.path.exists("data")
 		assert os.path.exists("data/aura_skill.json")
 		assert os.path.exists("data/curse_skill.json")
 		assert os.path.exists("data/passive_skill.json")
+		assert os.path.exists("data/skill_tree.json")
 		assert os.path.exists("data/gems.json")
 		assert os.path.exists("data/LegionPassives.lua")
 		assert os.path.exists("data/TimelessJewels.zip")
