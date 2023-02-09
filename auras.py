@@ -55,6 +55,26 @@ class Auras:
         return results
 
     @staticmethod
+    def analyze_links(char_stats: stats.Stats, active_skills: list[gems.SkillGem]) -> list[list[str]]:
+        results = [['// Effects from Link Skills:']]
+        for gem in active_skills:
+            if 'link' in gem.tags:
+                results.append(gem.get_link())
+
+        if len(results) == 1:
+            return []
+        additional_results = []
+        if char_stats.link_exposure:
+            additional_results.append("Nearby Enemies have -10% to Elemental Resistances")
+        if char_stats.link_target_inc_damage_done:
+            additional_results.append(f"{char_stats.link_target_inc_damage_done}% increased Damage")
+        if char_stats.link_target_reduced_damage_taken:
+            additional_results.append(f"{char_stats.link_target_reduced_damage_taken}% reduced Damage taken")
+        if additional_results:
+            results.append(["// Additional Link effects"] + additional_results)
+        return results
+
+    @staticmethod
     def ascendancy_mod(aura_counter: list[int], char_stats: stats.Stats, node_name: str) -> list[str]:
         ascendancies = {
             'Champion': [

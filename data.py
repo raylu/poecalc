@@ -1,4 +1,3 @@
-import csv
 import json
 import math
 import re
@@ -28,6 +27,15 @@ def load() -> tuple[dict[str, dict], dict, dict]:
 		for k in translation['ids']:
 			translated = translation['English'][0]
 			if any(translated['string'].startswith(prefix + ' ') for prefix in prefixes):
+				aura_translation[k] = translation['English']
+
+	with open('data/buff_skill.json', 'rb') as f:
+		raw_text = json.load(f)
+	substrings = ["Link Skill", "Linked Target", "taken from your Energy"]
+	for translation in raw_text:
+		for k in translation['ids']:
+			translated = translation['English'][0]
+			if any(substring.lower() in translated['string'].lower() for substring in substrings):
 				aura_translation[k] = translation['English']
 
 	curse_translation: dict[str, str] = {}

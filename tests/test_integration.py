@@ -1,11 +1,12 @@
 import os
 import unittest
+import warnings
 from typing import Optional
 
 import data
 from gems import GemQualityType, parse_skills_in_item
 from auras import Auras
-from stats import Stats, _parse_item
+from stats import Stats, _parse_item, stats_for_character
 
 gem_data, _, _ = data.load()
 
@@ -253,11 +254,68 @@ class TestAuras(unittest.TestCase):
 		# no supports
 		assert len(vulnerability.supports) == 0
 
+	def test_link_mods(self) -> None:
+		character = {
+			"character": {"classId": 0, "level": 100},
+			"items": []
+		}
+		skills = {
+			"hashes": [
+				44788,  # Inspiring Bond (Your linked Targets deal 30% increased Damage)
+				46471,  # Powerful Bond (Link Skills have 20% increased Buff effect)
+			],
+			'mastery_effects': [
+				18365 << 16,  # Exposure near linked Targets
+				46059 << 16,  # Your Linked Targets take 5% reduced Damage
+			],
+			"items": [],
+			"jewel_data": {},
+			"hashes_ex": []
+		}
+		stats, character, skills = stats_for_character(character, skills)
+		assert stats.inc_link_effect == 20
+		assert stats.link_exposure is True
+		assert stats.link_target_inc_damage_done == 30
+		assert stats.link_target_reduced_damage_taken == 5
+
+	def test_link_skills(self) -> None:
+		gem_list = [
+			create_gem("Intuitive Link", 20, 20),
+			create_gem("Vampiric Link", 20, 20),
+			create_gem("Destructive Link", 20, 20),
+			create_gem("Soul Link", 20, 20),
+			create_gem("Flame Link", 20, 20),
+			create_gem("Protective Link", 20, 20),
+		]
+		item = create_item(
+			mods=[],
+			socketed_gems=gem_list
+		)
+		char_stats = Stats(
+			inc_link_effect=20,
+			link_exposure=True,
+			link_target_inc_damage_done=30,
+			link_target_reduced_damage_taken=5,
+			life=2000
+		)
+		link_skills = parse_skills_in_item(item, char_stats)
+		with warnings.catch_warnings(record=True) as warning_list:
+			result_array = Auras().analyze_links(char_stats, link_skills)
+			assert string_in_result_array("to Critical Strike Multiplier", result_array)
+			assert string_in_result_array("less damage taken from Hits", result_array)
+			assert string_in_result_array("Added Fire Damage", result_array)
+			assert string_in_result_array("Life when you Block", result_array)
+			assert string_in_result_array("Nearby Enemies have", result_array)
+			assert string_in_result_array("increased Damage", result_array)
+			assert string_in_result_array("reduced Damage taken", result_array)
+			assert len(warning_list) == 2
+
 	def test_data_is_present(self) -> None:
 		assert os.path.exists("data")
 		assert os.path.exists("data/aura_skill.json")
 		assert os.path.exists("data/curse_skill.json")
 		assert os.path.exists("data/passive_skill.json")
+		assert os.path.exists("data/buff_skill.json")
 		assert os.path.exists("data/skill_tree.json")
 		assert os.path.exists("data/gems.json")
 		assert os.path.exists("data/LegionPassives.lua")
@@ -274,3 +332,11 @@ class TestAuras(unittest.TestCase):
 		assert os.path.exists("data/TimelessJewels/militant_faith.zip")
 		assert os.path.exists("data/TimelessJewels/militant_faith_passives.txt")
 		assert os.path.exists("data/TimelessJewels/stats.txt")
+
+
+def string_in_result_array(string: str, result_array: list[list[str]]):
+	for subarray in result_array:
+		for line in subarray:
+			if string in line:
+				return True
+	return False
