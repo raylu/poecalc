@@ -15,25 +15,40 @@ class Stats:
 	flat_str: int = 0
 	flat_dex: int = 0
 	flat_int: int = 0
-	strength: int = 0
-	dexterity: int = 0
-	intelligence: int = 0
-	specific_aura_effect: defaultdict[str, int] = field(default_factory=lambda: defaultdict(int))
-	specific_curse_effect: defaultdict[str, int] = field(default_factory=lambda: defaultdict(int))
-	increased_life: int = 0
-	mana: int = 0
 	flat_mana: int = 0
+
+	inc_life: int = 0
 	inc_str: int = 0
 	inc_dex: int = 0
 	inc_int: int = 0
 	inc_mana: int = 0
+
+	more_life: int = 0
+
+	life: int = 0
+	strength: int = 0
+	dexterity: int = 0
+	intelligence: int = 0
+	mana: int = 0
+
+	inc_link_effect: int = 0
+	link_target_inc_damage_done: int = 0
+	link_exposure: bool = False
+	link_target_reduced_damage_taken: int = 0
+
+	specific_aura_effect: defaultdict[str, int] = field(default_factory=lambda: defaultdict(int))
 	aura_effect: int = 0
+
 	aura_effect_on_enemies: int = 0
+
 	mine_aura_effect: int = 0
+	mine_limit: int = 15
+
+	specific_curse_effect: defaultdict[str, int] = field(default_factory=lambda: defaultdict(int))
 	inc_curse_effect: int = 0
 	more_curse_effect: int = 0
 	more_hex_effect: int = 0
-	mine_limit: int = 15
+
 	additional_notables: set[str] = field(default_factory=set)
 	global_gem_level_increase: list[tuple[set, int]] = field(default_factory=list)
 	global_gem_quality_increase: list[tuple[set, int]] = field(default_factory=list)
@@ -56,9 +71,11 @@ def fetch_stats(account: str, character_name: str) -> tuple[Stats, dict, dict]:
 	r = client.get('https://www.pathofexile.com/character-window/get-passive-skills', params=params)
 	r.raise_for_status()
 	skills = r.json()
+	return stats_for_character(character, skills)
 
+
+def stats_for_character(character: dict, skills: dict) -> Tuple[Stats, dict, dict]:
 	tree, masteries = passive_skill_tree()
-
 	stats = Stats(
 		flat_life=38 + character['character']['level'] * 12,
 		flat_str=tree['classes'][character['character']['classId']]['base_str'],
@@ -87,6 +104,7 @@ def fetch_stats(account: str, character_name: str) -> tuple[Stats, dict, dict]:
 	stats.dexterity = round(stats.flat_dex * (1 + stats.inc_dex / 100))
 	stats.flat_life += stats.strength // 2
 	stats.mana = round((stats.flat_mana + stats.intelligence // 2) * (1 + stats.inc_mana / 100))
+	stats.life = round((stats.flat_life + stats.strength // 2) * (1 + stats.inc_life / 100) * (1 + stats.more_life / 100))
 	return stats, character, skills
 
 
@@ -123,7 +141,8 @@ def passive_skill_tree() -> tuple[dict, dict]:
 
 matchers = [(re.compile(pattern), attr) for pattern, attr in [
 	(r'\+(\d+) to maximum Life', 'flat_life'),
-	(r'(\d+)% increased maximum Life', 'increased_life'),
+	(r'^(\d+)% increased maximum Life', 'inc_life'),
+	(r'^(\d+)% more maximum Life', 'more_life'),
 	(r'(.\d+) to (Strength|.+and Strength|all Attributes)', 'flat_str'),
 	(r'(.\d+) to (Dexterity|.+and Dexterity|all Attributes)', 'flat_dex'),
 	(r'(.\d+) to (Intelligence|.+and Intelligence|all Attributes)', 'flat_int'),
@@ -145,6 +164,10 @@ matchers = [(re.compile(pattern), attr) for pattern, attr in [
 	(r'Can have up to (\d+) additional Remote Mines placed at a time', 'mine_limit'),
 	(r'(\d+)% increased Effect of Non-Curse Auras from your Skills on Enemies', 'aura_effect_on_enemies'),
 	(r'(\d+)% increased Effect of Auras from Mines', 'mine_aura_effect'),
+	(r'Your Linked targets deal (\d+)% increased Damage', 'link_target_inc_damage_done'),
+	(r'Your Linked Targets take (\d+)% reduced Damage', 'link_target_reduced_damage_taken'),
+	(r'Link Skills have (\d+)% increased Buff Effect', 'inc_link_effect'),
+	(r'Enemies near your Linked targets have Fire, Cold and Lightning Exposure', 'link_exposure')
 ]]
 
 
@@ -163,48 +186,34 @@ def _parse_mods(stats: Stats, mods: List[str], tree: dict) -> None:
 			if m:
 				if attr == 'specific_aura_effect':
 					stats.specific_aura_effect[m.group(1)] += int(m.group(2))
-					continue
-
-				if attr == 'global_level':
+				elif attr == 'global_level':
 					stats.global_gem_level_increase += gems.parse_gem_descriptor(m.group(2), int(m.group(1)))
-					continue
-
-				if attr == 'global_quality':
+				elif attr == 'global_quality':
 					stats.global_gem_quality_increase += gems.parse_gem_descriptor(m.group(2), int(m.group(1)))
-					continue
-
-				if attr == 'additional_notable':
+				elif attr == 'additional_notable':
 					notable = m.group(1)
 					if ' if you have the matching modifier on' in notable:
 						notable = notable.split(' if you have the matching modifier on')[0]
 					stats.additional_notables |= {hash_for_notable(notable, tree)}
-					continue
-
-				if attr == 'alt_quality_bonus':
+				elif attr == 'alt_quality_bonus':
 					# TODO: handle quality % on item
 					_parse_mods(stats, [jewels.scale_numbers_in_string(m.group(1), 20 // int(m.group(2)))], tree)
-					continue
-
-				if attr == 'inc_curse_effect':
+				elif attr == 'inc_curse_effect':
 					if m.group(2) == 'in':
 						stats.inc_curse_effect += int(m.group(1))
 					else:
 						stats.inc_curse_effect -= int(m.group(1))
-					continue
-
-				if attr == 'more_curse_effect':
+				elif attr == 'more_curse_effect':
 					if m.group(2) == 'more':
 						stats.more_curse_effect += int(m.group(1))
 					else:
 						stats.more_curse_effect -= int(m.group(1))
-					continue
-
-				if attr == 'specific_curse_effect':
+				elif attr == 'specific_curse_effect':
 					stats.specific_curse_effect[m.group(2)] += int(m.group(1))
-					continue
-
-				value = int(m.group(1))
-				setattr(stats, attr, getattr(stats, attr) + value)
+				elif attr == 'link_exposure':
+					stats.link_exposure = True
+				else:
+					setattr(stats, attr, getattr(stats, attr) + int(m.group(1)))
 
 
 def hash_for_notable(notable: str, tree: dict) -> str:
