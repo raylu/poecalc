@@ -36,8 +36,11 @@ class Gem:
 		self.additional_effects = []
 		self.character_stats = character_stats
 		gem_data = self.get_gem_data()
-		self.tags = {gem_tag.lower() for gem_tag in (gem_data['tags'] or gem_data.get('types', []))}
-
+		self.tags = set()
+		if gem_data["tags"]:
+			self.tags = {tag.lower() for tag in gem_data["tags"]}
+		if gem_data.get("active_skill", {}).get("types"):
+			self.tags |= {tag.lower() for tag in gem_data["active_skill"]["types"]}
 		for prop in gem_dict['properties']:
 			if prop['name'] == 'Level':
 				if m := re.search(r'(\d+)', prop['values'][0][0]):
