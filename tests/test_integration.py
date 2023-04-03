@@ -15,8 +15,8 @@ def gem_can_have_alt_quality(name: str, quality_type: GemQualityType) -> bool:
 	return len(gem_data[name]['static']['quality_stats']) > quality_type.value
 
 
-def create_gem(name: str, level: int, quality: int, quality_type: GemQualityType = GemQualityType.Superior,
-			   socket: int = 0) -> dict:
+def create_gem(name: str, level: int, quality: int,
+			quality_type: GemQualityType = GemQualityType.Superior, socket: int = 0) -> dict:
 	type_line_list = []
 	if quality_type != GemQualityType.Superior:
 		type_line_list.append(quality_type.name)

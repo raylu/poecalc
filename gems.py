@@ -36,8 +36,7 @@ class Gem:
 		self.additional_effects = []
 		self.character_stats = character_stats
 		gem_data = self.get_gem_data()
-		self.tags = {gem_tag.lower() for gem_tag in
-					 (gem_data['tags'] if gem_data['tags'] else [] + gem_data.get('types', []))}
+		self.tags = {gem_tag.lower() for gem_tag in (gem_data['tags'] or gem_data.get('types', []))}
 
 		for prop in gem_dict['properties']:
 			if prop['name'] == 'Level':
@@ -167,8 +166,8 @@ class SkillGem(Gem):
 			self.aura_effect += self.character_stats.aura_effect_on_enemies
 		if 'remotemined' in self.tags:
 			self.aura_effect += self.character_stats.mine_aura_effect
-		self.inc_curse_effect += self.character_stats.inc_curse_effect + \
-								 self.character_stats.specific_curse_effect[self.name]
+		self.inc_curse_effect += self.character_stats.inc_curse_effect
+		self.inc_curse_effect += self.character_stats.specific_curse_effect[self.name]
 		if 'link' in self.tags:
 			self.inc_link_effect += self.character_stats.inc_link_effect
 		self.more_curse_effect += self.character_stats.more_curse_effect
@@ -244,8 +243,8 @@ class SkillGem(Gem):
 		aura_result: list[str] = []
 		previous_value: list[float] = []
 		for stat, value in self.iterate_effects(get_vaal_effect):
-			formatted_text, previous_value = self.translate_effect(stat, value, previous_value, self.aura_effect,
-																   aura_translation)
+			formatted_text, previous_value = self.translate_effect(stat, value, previous_value,
+					self.aura_effect, aura_translation)
 			if not formatted_text:
 				continue
 			if m := re.search('you and nearby allies( deal| have| gain| are|) (.*)', formatted_text, re.IGNORECASE):
@@ -275,8 +274,8 @@ class SkillGem(Gem):
 		curse_result: list[str] = []
 		previous_value: list[float] = []
 		for stat, value in self.iterate_effects():
-			formatted_text, previous_value = self.translate_effect(stat, value, previous_value, self.get_curse_effect(),
-																   curse_translation)
+			formatted_text, previous_value = self.translate_effect(stat, value, previous_value,
+					self.get_curse_effect(), curse_translation)
 			if not formatted_text:
 				continue
 			if m := re.search(r'Other effects on Cursed enemies expire (\d+)% slower', formatted_text):
@@ -326,7 +325,7 @@ class SkillGem(Gem):
 		name = self.name
 		special_quality = f'{self.quality_type.name} ' if self.quality_type != GemQualityType.Superior else ''
 		header = f'// {special_quality}{name} (lvl {self.level}, {self.quality}%) ' \
-				 f'{support_comment} {self.get_curse_effect()}%'
+		         f'{support_comment} {self.get_curse_effect()}%'
 		return [header] + curse_result
 
 	def get_mine(self) -> list[str]:
@@ -338,7 +337,7 @@ class SkillGem(Gem):
 			if not formatted_text:
 				continue
 			if m := re.search(r'Each Mine applies (\d+)% increased Damage Taken to Enemies '
-							  r'near it, up\nto a maximum of (\d+)%', formatted_text):
+			                  r'near it, up\nto a maximum of (\d+)%', formatted_text):
 				value = min(int(m.group(1)) * self.mine_limit, int(m.group(2)))
 				mine_result.append(f'Nearby Enemies take {value}% increased damage')
 			elif m := re.search(r'Each Mine applies (\d+)% chance to deal Double Damage to Hits against Enemies '
@@ -377,8 +376,8 @@ class SkillGem(Gem):
 			warnings.warn(
 				"Destructive Link effect is not recognized by PoB. Manually adjust Mainhand critical strike chance")
 		for stat, value in self.iterate_effects():
-			formatted_text, previous_value = self.translate_effect(stat, value, previous_value, self.inc_link_effect,
-																   aura_translation)
+			formatted_text, previous_value = self.translate_effect(stat, value, previous_value,
+					self.inc_link_effect, aura_translation)
 
 			if not formatted_text:
 				continue
@@ -407,8 +406,8 @@ class SkillGem(Gem):
 		return [header] + link_result
 
 	@staticmethod
-	def translate_effect(effect_id: str, effect_value: int, previous_effect_values: list[float], scaling_factor: int,
-						 translation_dict: dict) -> Tuple[str, list[float]]:
+	def translate_effect(effect_id: str, effect_value: int, previous_effect_values: list[float],
+				scaling_factor: int, translation_dict: dict) -> Tuple[str, list[float]]:
 		"""Finds the correct translation for an effect depending on the effects value"""
 		if effect_id not in translation_dict:
 			return '', []

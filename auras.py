@@ -116,7 +116,8 @@ class Auras:
                 '+30% to Elemental Resistances',
             ],
             'Essence Glutton': [
-                'For each nearby corpse, you and nearby Allies Regenerate 0.2% of Energy Shield per second, up to 2.0% per second',
+                'For each nearby corpse, you and nearby Allies Regenerate 0.2% of Energy Shield per second, '
+                    'up to 2.0% per second',
                 'For each nearby corpse, you and nearby Allies Regenerate 5 Mana per second, up to 50 per second'
             ],
             'Plaguebringer':

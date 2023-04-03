@@ -22,8 +22,8 @@ class TreeGraph:
 	"""This class is used to determine the shortest paths between two passive skills in a given passive tree"""
 	def __init__(self, tree: dict, skills: dict):
 		# skills['hashes'] can contain hashes that are not part of the tree (cluster notables)
-		self.node_hashes: set[str] = {str(hash) for hash in skills['hashes']} & \
-									  set(node_hash for node_hash in tree['nodes'] if node_hash != 'root')
+		skill_hashes = {str(hash) for hash in skills['hashes']}
+		self.node_hashes: set[str] = skill_hashes & {node_hash for node_hash in tree['nodes'] if node_hash != 'root'}
 		self.tree = tree
 		self.id_for_hash: dict[str, int] = {node: idx for idx, node in enumerate(self.node_hashes)}
 		self.adjacency_list: dict[int, set] = {node: set() for node in range(len(self.node_hashes))}
@@ -131,7 +131,7 @@ def process_transforming_jewels(tree: dict, skills: dict, stats: 'Stats', charac
 		# unnatural instinct needs to be processed last since it allocates, which can mess up split personality
 		'Unnatural Instinct': 4,
 	}
-	special_jewels = [(jewel, jewel_priority[jewel['name']]) for jewel in skills['items'] if jewel['name'] in jewel_priority]
+	special_jewels = [(j, jewel_priority[j['name']]) for j in skills['items'] if j['name'] in jewel_priority]
 	special_jewels.sort(key=lambda x: x[1])
 
 	for jewel, _ in special_jewels:

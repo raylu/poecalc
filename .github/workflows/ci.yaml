@@ -12,13 +12,13 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
     - name: set up Python 3.x
-      uses: actions/setup-python@v2
+      uses: actions/setup-python@v4
       with:
         python-version: '3.x'
     - name: install
-      run: pip3 install --quiet --requirement requirements.txt
+      run: pip3 install --quiet --requirement requirements.txt ruff
     - name: install unzip module
       run: sudo apt-get install unzip
     - name: download data
@@ -36,3 +36,5 @@ jobs:
         unzip TimelessJewels.zip -d TimelessJewels
     - name: tests
       run: python3 -m unittest --verbose
+    - name: ruff
+      run: ruff check --format=github .
