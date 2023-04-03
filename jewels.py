@@ -1,5 +1,6 @@
 import math
 import re
+import warnings
 from typing import Tuple, Optional, no_type_check, TYPE_CHECKING
 if TYPE_CHECKING:
 	from stats import Stats
@@ -225,6 +226,9 @@ class TimelessJewel:
 			self._transform_small_passive(node)
 
 	def _transform_notable(self, node: dict) -> None:
+		if node['skill'] not in self.mapping:
+			warnings.warn(f'Node "{node["name"]}" in radius of Timeless Jewel could not be resolved')
+			return
 		alt_mods = self.mapping[node['skill']]
 		if alt_mods['replaced']:
 			node['stats'] = alt_mods['mods']
