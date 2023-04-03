@@ -66,10 +66,6 @@ class Auras:
         additional_results = []
         if char_stats.link_exposure:
             additional_results.append("Nearby Enemies have -10% to Elemental Resistances")
-        if char_stats.link_target_inc_damage_done:
-            additional_results.append(f"{char_stats.link_target_inc_damage_done}% increased Damage")
-        if char_stats.link_target_reduced_damage_taken:
-            additional_results.append(f"{char_stats.link_target_reduced_damage_taken}% reduced Damage taken")
         if additional_results:
             results.append(["// Additional Link effects"] + additional_results)
         return results

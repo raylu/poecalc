@@ -2,7 +2,7 @@ from dataclasses import dataclass, field
 import json
 import re
 from collections import defaultdict
-from typing import Tuple, List, Iterator
+from typing import Iterator
 
 import httpx
 import gems
@@ -32,9 +32,7 @@ class Stats:
 	mana: int = 0
 
 	inc_link_effect: int = 0
-	link_target_inc_damage_done: int = 0
 	link_exposure: bool = False
-	link_target_reduced_damage_taken: int = 0
 
 	specific_aura_effect: defaultdict[str, int] = field(default_factory=lambda: defaultdict(int))
 	aura_effect: int = 0
@@ -74,7 +72,7 @@ def fetch_stats(account: str, character_name: str) -> tuple[Stats, dict, dict]:
 	return stats_for_character(character, skills)
 
 
-def stats_for_character(character: dict, skills: dict) -> Tuple[Stats, dict, dict]:
+def stats_for_character(character: dict, skills: dict) -> tuple[Stats, dict, dict]:
 	tree, masteries = passive_skill_tree()
 	stats = Stats(
 		flat_life=38 + character['character']['level'] * 12,
@@ -108,7 +106,7 @@ def stats_for_character(character: dict, skills: dict) -> Tuple[Stats, dict, dic
 	return stats, character, skills
 
 
-def iter_passives(tree: dict, masteries: dict, skills: dict) -> Iterator[Tuple[str, List[str]]]:
+def iter_passives(tree: dict, masteries: dict, skills: dict) -> Iterator[tuple[str, list[str]]]:
 	for h in skills['hashes']:
 		node = tree['nodes'][str(h)]
 		yield node['name'], node['stats']
@@ -164,9 +162,7 @@ matchers = [(re.compile(pattern), attr) for pattern, attr in [
 	(r'Can have up to (\d+) additional Remote Mines placed at a time', 'mine_limit'),
 	(r'(\d+)% increased Effect of Non-Curse Auras from your Skills on Enemies', 'aura_effect_on_enemies'),
 	(r'(\d+)% increased Effect of Auras from Mines', 'mine_aura_effect'),
-	(r'Your Linked targets deal (\d+)% increased Damage', 'link_target_inc_damage_done'),
-	(r'Your Linked Targets take (\d+)% reduced Damage', 'link_target_reduced_damage_taken'),
-	(r'Link Skills have (\d+)% increased Buff Effect', 'inc_link_effect'),
+	(r'Link Skills have (\d+)% increased Buff Effect( if you have Linked to a target Recently)?', 'inc_link_effect'),
 	(r'Enemies near your Linked targets have Fire, Cold and Lightning Exposure', 'link_exposure')
 ]]
 
@@ -179,7 +175,7 @@ def _parse_item(stats: Stats, item: dict, tree: dict) -> None:
 		_parse_mods(stats, item[modlist], tree)
 
 
-def _parse_mods(stats: Stats, mods: List[str], tree: dict) -> None:
+def _parse_mods(stats: Stats, mods: list[str], tree: dict) -> None:
 	for mod in mods:
 		for regex, attr in matchers:
 			m = regex.search(mod)

@@ -257,26 +257,22 @@ class TestAuras(unittest.TestCase):
 	def test_link_mods(self) -> None:
 		character = {
 			"character": {"classId": 0, "level": 100},
-			"items": []
+			"items": [],
 		}
 		skills = {
 			"hashes": [
-				44788,  # Inspiring Bond (Your linked Targets deal 30% increased Damage)
-				46471,  # Powerful Bond (Link Skills have 20% increased Buff effect)
+				60781,  # Inspiring Bond (Link Skills have 20% increased Buff Effect)
 			],
 			'mastery_effects': [
-				18365 << 16,  # Exposure near linked Targets
-				46059 << 16,  # Your Linked Targets take 5% reduced Damage
+				26985 << 16,  # Exposure near linked Targets
 			],
 			"items": [],
 			"jewel_data": {},
-			"hashes_ex": []
+			"hashes_ex": [],
 		}
 		stats, character, skills = stats_for_character(character, skills)
 		assert stats.inc_link_effect == 20
 		assert stats.link_exposure is True
-		assert stats.link_target_inc_damage_done == 30
-		assert stats.link_target_reduced_damage_taken == 5
 
 	def test_link_skills(self) -> None:
 		gem_list = [
@@ -294,8 +290,6 @@ class TestAuras(unittest.TestCase):
 		char_stats = Stats(
 			inc_link_effect=20,
 			link_exposure=True,
-			link_target_inc_damage_done=30,
-			link_target_reduced_damage_taken=5,
 			life=2000
 		)
 		link_skills = parse_skills_in_item(item, char_stats)
@@ -306,8 +300,6 @@ class TestAuras(unittest.TestCase):
 			assert string_in_result_array("Added Fire Damage", result_array)
 			assert string_in_result_array("Life when you Block", result_array)
 			assert string_in_result_array("Nearby Enemies have", result_array)
-			assert string_in_result_array("increased Damage", result_array)
-			assert string_in_result_array("reduced Damage taken", result_array)
 			assert len(warning_list) == 2
 
 	def test_data_is_present(self) -> None:
