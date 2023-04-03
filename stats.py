@@ -63,8 +63,19 @@ def fetch_stats(account: str, character_name: str) -> tuple[Stats, dict, dict]:
 	r = client.post('https://www.pathofexile.com/character-window/get-items', data=params)
 	r.raise_for_status()
 	character = r.json()
-	# remove offhand items
-	character['items'] = [item for item in character['items'] if item['inventoryId'] not in ['Weapon2', 'Offhand2']]
+	new_items = []
+	for item in character["items"]:
+		if item["inventoryId"] in ['Weapon2', 'Offhand2']:
+			continue  # remove offhand items
+		if item["name"] == "Kalandra's Touch":
+			slot = "Ring1" if item["inventoryId"] == "Ring2" else "Ring2"
+			for item2 in character["items"]:
+				if item2["inventoryId"] == slot:
+					new_items.append(item2)
+					break
+		else:
+			new_items.append(item)
+	character['items'] = new_items
 
 	r = client.get('https://www.pathofexile.com/character-window/get-passive-skills', params=params)
 	r.raise_for_status()
