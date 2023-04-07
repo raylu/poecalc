@@ -325,6 +325,23 @@ class TestAuras(unittest.TestCase):
 		assert os.path.exists("data/TimelessJewels/militant_faith_passives.txt")
 		assert os.path.exists("data/TimelessJewels/stats.txt")
 
+	def test_old_version_passives(self) -> None:
+		character = {
+			"character": {"classId": 0, "level": 50},
+			"items": [],
+		}
+		skills = {
+			"hashes": [
+				14674,  # Faster Doom Gain; removed in 3.20
+			],
+			'mastery_effects': [],
+			"items": [],
+			"jewel_data": {},
+			"hashes_ex": [],
+		}
+		with warnings.catch_warnings(record=True):
+			stats_for_character(character, skills)  # just test that there's no exception
+
 
 def string_in_result_array(string: str, result_array: list[list[str]]):
 	for subarray in result_array:

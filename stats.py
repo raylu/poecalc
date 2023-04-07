@@ -3,6 +3,7 @@ import json
 import re
 from collections import defaultdict
 from typing import Iterator
+import warnings
 
 import httpx
 import gems
@@ -119,7 +120,11 @@ def stats_for_character(character: dict, skills: dict) -> tuple[Stats, dict, dic
 
 def iter_passives(tree: dict, masteries: dict, skills: dict) -> Iterator[tuple[str, list[str]]]:
 	for h in skills['hashes']:
-		node = tree['nodes'][str(h)]
+		try:
+			node = tree['nodes'][str(h)]
+		except KeyError:
+			warnings.warn(f'Could not import passive node {h}')
+			continue
 		yield node['name'], node['stats']
 
 	cluster_jewel_nodes = {}
