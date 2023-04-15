@@ -86,6 +86,7 @@ class Gem:
 
 	def quality_effect(self, vaal_effect: bool) -> list:
 		return []
+
 	def __repr__(self) -> str:
 		attrs = ', '.join(f'{k}={repr(v)}' for k, v in self.__dict__.items())
 		return f'{self.__class__.__name__}({attrs})'
@@ -428,7 +429,13 @@ class SkillGem(Gem):
 		value = scaled_value(effect_value, scaling_factor, translation['index_handlers'][0])
 		previous_effect_values.append(value)
 		if len(translation['format']) == len(previous_effect_values):
-			return translation['string'].format(*previous_effect_values), []
+			formatted_values: list[Union[float, str]] = []
+			for fmt, value in zip(translation['format'], previous_effect_values):
+				if fmt == '+#':
+					formatted_values.append(f'+{value}')
+				else:
+					formatted_values.append(value)
+			return translation['string'].format(*formatted_values), []
 		return '', previous_effect_values
 
 

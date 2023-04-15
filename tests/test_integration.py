@@ -112,6 +112,16 @@ class TestAuras(unittest.TestCase):
 			for skill_gem in active_skills:
 				skill_gem.get_mine()
 
+	def test_precision(self):
+		gem_data = create_gem('Precision', 20, 0)
+		(precision,) = parse_skills_in_item(create_item([], [gem_data]), Stats())
+		effects = precision.get_aura(False)
+		assert effects == [
+			'// Precision (lvl 20, 0%)  0%',
+			'+701 to Accuracy Rating', # special formatting rule from local_accuracy_rating
+			'58% increased Critical Strike Chance',
+		]
+
 	def test_supports_for_auras(self) -> None:
 		char_stats = Stats()
 		gem_list = [
