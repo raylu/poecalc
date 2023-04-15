@@ -413,7 +413,7 @@ class SkillGem(Gem):
 	def translate_effect(effect_id: str, effect_value: int, previous_effect_values: list[float],
 				scaling_factor: int, translation_dict: dict) -> Tuple[str, list[float]]:
 		"""Finds the correct translation for an effect depending on the effects value"""
-		if effect_id not in translation_dict:
+		if effect_id not in translation_dict or effect_id == 'display_link_stuff':
 			return '', []
 
 		for translation in translation_dict[effect_id]:
@@ -424,8 +424,8 @@ class SkillGem(Gem):
 			if effect_value == 0:
 				return '', []
 			raise Exception(
-				f'Could not find the right translation for '
-				f'{effect_value} (value: {effect_value}) in {translation_dict[effect_id]}')
+				f'Could not find the right translation for {effect_id} '
+				f'(value: {effect_value}) in {translation_dict[effect_id]}')
 		value = scaled_value(effect_value, scaling_factor, translation['index_handlers'][0])
 		previous_effect_values.append(value)
 		if len(translation['format']) == len(previous_effect_values):
