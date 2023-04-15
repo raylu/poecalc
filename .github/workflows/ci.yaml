@@ -13,14 +13,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v3
-    - name: set up Python 3.x
-      uses: actions/setup-python@v4
+    - uses: actions/setup-python@v4
       with:
         python-version: '3.x'
-    - name: install
-      run: pip3 install --quiet --requirement requirements.txt ruff mypy
-    - name: install unzip module
-      run: sudo apt-get install unzip
+        cache: 'pip'
+    - run: pip3 install --quiet --requirement requirements.txt ruff mypy
+    - run: sudo apt-get install unzip
     - name: download data
       run: |
         mkdir data
@@ -34,9 +32,6 @@ jobs:
         wget -q https://raw.githubusercontent.com/PathOfBuildingCommunity/PathOfBuilding/dev/src/Data/LegionPassives.lua
         wget -q https://raw.githubusercontent.com/Liberatorist/TimelessEmulator/master/TimelessEmulator/Build/Output/TimelessJewels/TimelessJewels.zip
         unzip TimelessJewels.zip -d TimelessJewels
-    - name: tests
-      run: python3 -m unittest --verbose
-    - name: mypy
-      run: mypy .
-    - name: ruff
-      run: ruff check --format=github .
+    - run: python3 -m unittest --verbose
+    - run: mypy .
+    - run: ruff check --format=github .
