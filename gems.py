@@ -543,7 +543,7 @@ def parse_gem_descriptor(descriptor: Union[None, str], value: int) -> list[tuple
 	descriptor = descriptor[:-1].lower()
 
 	if 'non-' in descriptor:  # handles vaal caress - decreases all gem levels and then sets all vaal gems back to 0
-		return [({'active_skill'}, value), ({'support'}, value), ({descriptor[4:]}, -value)]
+		return [({'grants_active_skill'}, value), ({'support'}, value), ({descriptor[4:]}, -value)]
 
 	required_tags = set()
 	if 'skill' in descriptor:
