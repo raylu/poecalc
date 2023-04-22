@@ -125,11 +125,11 @@ class TestAuras(unittest.TestCase):
 	def test_supports_for_auras(self) -> None:
 		char_stats = Stats()
 		gem_list = [
-			create_gem("Determination", 20, 20),
-			create_gem("Divine Blessing Support", 20, 20),
-			create_gem("Awakened Generosity Support", 5, 20),
-			create_gem("Enhance Support", 3, 20),
-			create_gem("Empower Support", 3, 20),
+			create_gem('Determination', 20, 20),
+			create_gem('Divine Blessing Support', 20, 20),
+			create_gem('Awakened Generosity Support', 5, 20),
+			create_gem('Enhance Support', 3, 20),
+			create_gem('Empower Support', 3, 20),
 		]
 		item = create_item([], gem_list)
 		active_skills = parse_skills_in_item(item, char_stats)
@@ -143,10 +143,10 @@ class TestAuras(unittest.TestCase):
 		char_stats = Stats()
 		char_stats.mine_aura_effect = 26
 		gem_list = [
-			create_gem("Portal", 1, 0),
-			create_gem("High-Impact Mine Support", 20, 20, GemQualityType.Divergent),
-			create_gem("Minefield Support", 20, 20, GemQualityType.Divergent),
-			create_gem("Arrogance Support", 20, 20, GemQualityType.Superior),
+			create_gem('Portal', 1, 0),
+			create_gem('High-Impact Mine Support', 20, 20, GemQualityType.Divergent),
+			create_gem('Minefield Support', 20, 20, GemQualityType.Divergent),
+			create_gem('Arrogance Support', 20, 20, GemQualityType.Superior),
 		]
 		item = create_item([], gem_list)
 		active_skills = parse_skills_in_item(item, char_stats)
@@ -159,11 +159,11 @@ class TestAuras(unittest.TestCase):
 	def test_supports_for_curses(self) -> None:
 		char_stats = Stats()
 		gem_list = [
-			create_gem("Despair", 20, 20),
-			create_gem("Blasphemy Support", 20, 20),
-			create_gem("Arrogance Support", 20, 20),
-			create_gem("Enhance Support", 3, 20),
-			create_gem("Empower Support", 3, 20),
+			create_gem('Despair', 20, 20),
+			create_gem('Blasphemy Support', 20, 20),
+			create_gem('Arrogance Support', 20, 20),
+			create_gem('Enhance Support', 3, 20),
+			create_gem('Empower Support', 3, 20),
 		]
 		item = create_item([], gem_list)
 		active_skills = parse_skills_in_item(item, char_stats)
@@ -197,7 +197,7 @@ class TestAuras(unittest.TestCase):
 		assert char_stats.flat_int == 40
 		assert char_stats.global_gem_level_increase == [({'lightning'}, 1), (set(), 1)]
 		assert char_stats.global_gem_quality_increase == [(set(), 20)]
-		assert char_stats.specific_curse_effect["Despair"] == 10
+		assert char_stats.specific_curse_effect['Despair'] == 10
 		assert char_stats.inc_curse_effect == 10
 		assert char_stats.more_curse_effect == 10
 
@@ -266,19 +266,19 @@ class TestAuras(unittest.TestCase):
 
 	def test_link_mods(self) -> None:
 		character = {
-			"character": {"classId": 0, "level": 100},
-			"items": [],
+			'character': {'classId': 0, 'level': 100},
+			'items': [],
 		}
 		skills = {
-			"hashes": [
+			'hashes': [
 				60781,  # Inspiring Bond (Link Skills have 20% increased Buff Effect)
 			],
 			'mastery_effects': [
 				26985 << 16,  # Exposure near linked Targets
 			],
-			"items": [],
-			"jewel_data": {},
-			"hashes_ex": [],
+			'items': [],
+			'jewel_data': {},
+			'hashes_ex': [],
 		}
 		stats, character, skills = stats_for_character(character, skills)
 		assert stats.inc_link_effect == 20
@@ -286,12 +286,12 @@ class TestAuras(unittest.TestCase):
 
 	def test_link_skills(self) -> None:
 		gem_list = [
-			create_gem("Intuitive Link", 20, 20),
-			create_gem("Vampiric Link", 20, 20),
-			create_gem("Destructive Link", 20, 20),
-			create_gem("Soul Link", 20, 20),
-			create_gem("Flame Link", 20, 20),
-			create_gem("Protective Link", 20, 20),
+			create_gem('Intuitive Link', 20, 20),
+			create_gem('Vampiric Link', 20, 20),
+			create_gem('Destructive Link', 20, 20),
+			create_gem('Soul Link', 20, 20),
+			create_gem('Flame Link', 20, 20),
+			create_gem('Protective Link', 20, 20),
 		]
 		item = create_item(
 			mods=[],
@@ -305,49 +305,49 @@ class TestAuras(unittest.TestCase):
 		link_skills = parse_skills_in_item(item, char_stats)
 		with warnings.catch_warnings(record=True) as warning_list:
 			result_array = Auras().analyze_links(char_stats, link_skills)
-			assert string_in_result_array("to Critical Strike Multiplier", result_array)
-			assert string_in_result_array("less damage taken from Hits", result_array)
-			assert string_in_result_array("Added Fire Damage", result_array)
-			assert string_in_result_array("Life when you Block", result_array)
-			assert string_in_result_array("Nearby Enemies have", result_array)
+			assert string_in_result_array('to Critical Strike Multiplier', result_array)
+			assert string_in_result_array('less damage taken from Hits', result_array)
+			assert string_in_result_array('Added Fire Damage', result_array)
+			assert string_in_result_array('Life when you Block', result_array)
+			assert string_in_result_array('Nearby Enemies have', result_array)
 			assert len(warning_list) == 2
 
 	def test_data_is_present(self) -> None:
-		assert os.path.exists("data")
-		assert os.path.exists("data/aura_skill.json")
-		assert os.path.exists("data/curse_skill.json")
-		assert os.path.exists("data/passive_skill.json")
-		assert os.path.exists("data/buff_skill.json")
-		assert os.path.exists("data/skill_tree.json")
-		assert os.path.exists("data/gems.json")
-		assert os.path.exists("data/LegionPassives.lua")
-		assert os.path.exists("data/TimelessJewels.zip")
-		assert os.path.exists("data/TimelessJewels")
-		assert os.path.exists("data/TimelessJewels/brutal_restraint.zip")
-		assert os.path.exists("data/TimelessJewels/brutal_restraint_passives.txt")
-		assert os.path.exists("data/TimelessJewels/elegant_hubris.zip")
-		assert os.path.exists("data/TimelessJewels/elegant_hubris_passives.txt")
-		assert os.path.exists("data/TimelessJewels/glorious_vanity.zip")
-		assert os.path.exists("data/TimelessJewels/glorious_vanity_passives.txt")
-		assert os.path.exists("data/TimelessJewels/lethal_pride.zip")
-		assert os.path.exists("data/TimelessJewels/lethal_pride_passives.txt")
-		assert os.path.exists("data/TimelessJewels/militant_faith.zip")
-		assert os.path.exists("data/TimelessJewels/militant_faith_passives.txt")
-		assert os.path.exists("data/TimelessJewels/stats.txt")
+		assert os.path.exists('data')
+		assert os.path.exists('data/aura_skill.json')
+		assert os.path.exists('data/curse_skill.json')
+		assert os.path.exists('data/passive_skill.json')
+		assert os.path.exists('data/buff_skill.json')
+		assert os.path.exists('data/skill_tree.json')
+		assert os.path.exists('data/gems.json')
+		assert os.path.exists('data/LegionPassives.lua')
+		assert os.path.exists('data/TimelessJewels.zip')
+		assert os.path.exists('data/TimelessJewels')
+		assert os.path.exists('data/TimelessJewels/brutal_restraint.zip')
+		assert os.path.exists('data/TimelessJewels/brutal_restraint_passives.txt')
+		assert os.path.exists('data/TimelessJewels/elegant_hubris.zip')
+		assert os.path.exists('data/TimelessJewels/elegant_hubris_passives.txt')
+		assert os.path.exists('data/TimelessJewels/glorious_vanity.zip')
+		assert os.path.exists('data/TimelessJewels/glorious_vanity_passives.txt')
+		assert os.path.exists('data/TimelessJewels/lethal_pride.zip')
+		assert os.path.exists('data/TimelessJewels/lethal_pride_passives.txt')
+		assert os.path.exists('data/TimelessJewels/militant_faith.zip')
+		assert os.path.exists('data/TimelessJewels/militant_faith_passives.txt')
+		assert os.path.exists('data/TimelessJewels/stats.txt')
 
 	def test_old_version_passives(self) -> None:
 		character = {
-			"character": {"classId": 0, "level": 50},
-			"items": [],
+			'character': {'classId': 0, 'level': 50},
+			'items': [],
 		}
 		skills = {
-			"hashes": [
+			'hashes': [
 				14674,  # Faster Doom Gain; removed in 3.20
 			],
 			'mastery_effects': [],
-			"items": [],
-			"jewel_data": {},
-			"hashes_ex": [],
+			'items': [],
+			'jewel_data': {},
+			'hashes_ex': [],
 		}
 		with warnings.catch_warnings(record=True):
 			stats_for_character(character, skills)  # just test that there's no exception

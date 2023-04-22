@@ -65,13 +65,13 @@ def fetch_stats(account: str, character_name: str) -> tuple[Stats, dict, dict]:
 	r.raise_for_status()
 	character = r.json()
 	new_items = []
-	for item in character["items"]:
-		if item["inventoryId"] in ['Weapon2', 'Offhand2']:
+	for item in character['items']:
+		if item['inventoryId'] in ['Weapon2', 'Offhand2']:
 			continue  # remove offhand items
-		if item["name"] == "Kalandra's Touch":
-			slot = "Ring1" if item["inventoryId"] == "Ring2" else "Ring2"
-			for item2 in character["items"]:
-				if item2["inventoryId"] == slot:
+		if item['name'] == "Kalandra's Touch":
+			slot = 'Ring1' if item['inventoryId'] == 'Ring2' else 'Ring2'
+			for item2 in character['items']:
+				if item2['inventoryId'] == slot:
 					new_items.append(item2)
 					break
 		else:

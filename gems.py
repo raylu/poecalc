@@ -37,10 +37,10 @@ class Gem:
 		self.character_stats = character_stats
 		gem_data = self.get_gem_data()
 		self.tags = set()
-		if gem_data["tags"]:
-			self.tags = {tag.lower() for tag in gem_data["tags"]}
-		if gem_data.get("active_skill", {}).get("types"):
-			self.tags |= {tag.lower() for tag in gem_data["active_skill"]["types"]}
+		if gem_data['tags']:
+			self.tags = {tag.lower() for tag in gem_data['tags']}
+		if gem_data.get('active_skill', {}).get('types'):
+			self.tags |= {tag.lower() for tag in gem_data['active_skill']['types']}
 		for prop in gem_dict['properties']:
 			if prop['name'] == 'Level':
 				if m := re.search(r'(\d+)', prop['values'][0][0]):
@@ -373,12 +373,12 @@ class SkillGem(Gem):
 	def get_link(self) -> list[str]:
 		link_result: list[str] = []
 		previous_value: list[float] = []
-		if self.name == "Protective Link":
+		if self.name == 'Protective Link':
 			warnings.warn(
-				"Protective Link effect is not recognized by PoB. Manually adjust chance to block attack damage")
-		elif self.name == "Destructive Link":
+				'Protective Link effect is not recognized by PoB. Manually adjust chance to block attack damage')
+		elif self.name == 'Destructive Link':
 			warnings.warn(
-				"Destructive Link effect is not recognized by PoB. Manually adjust Mainhand critical strike chance")
+				'Destructive Link effect is not recognized by PoB. Manually adjust Mainhand critical strike chance')
 		for stat, value in self.iterate_effects():
 			formatted_text, previous_value = self.translate_effect(stat, value, previous_value,
 					self.inc_link_effect, aura_translation)
@@ -387,14 +387,14 @@ class SkillGem(Gem):
 				continue
 
 			elif m := re.search(r'(\d+)% of Damage from Hits against target is taken', formatted_text):
-				link_result.append(f"{m.group(1)}% less damage taken from Hits")
+				link_result.append(f'{m.group(1)}% less damage taken from Hits')
 			elif m := re.search(r'Linked target takes (\d+)% less Damage', formatted_text):
-				link_result.append(f"{m.group(1)}% less damage taken")
+				link_result.append(f'{m.group(1)}% less damage taken')
 			elif m := re.search(r'Linked target gains Added Fire Damage equal to (\d+)% of your', formatted_text):
 				value = int(self.character_stats.life * (int(m.group(1)) / 100) * (1 + self.inc_link_effect / 100))
-				link_result.append(f"{value} to {value} Added Fire Damage")
+				link_result.append(f'{value} to {value} Added Fire Damage')
 			elif m := re.search(r'Linked target Recovers (\d+) Life when they Block', formatted_text):
-				link_result.append(f"Recover {m.group(1)} Life when you Block")
+				link_result.append(f'Recover {m.group(1)} Life when you Block')
 			elif m := re.search(r'Linked target (has|deals|gains) (.*)', formatted_text):
 				link_result.append(m.group(2))
 
@@ -497,7 +497,7 @@ def parse_skills_in_item(item: dict, char_stats: 'Stats') -> list[SkillGem]:
 	active_skills = []
 	support_gems = []
 	for gem in socketed_items:
-		if "Eye Jewel" in gem["baseType"]:
+		if 'Eye Jewel' in gem['baseType']:
 			continue
 		try:
 			if gem.get('support'):
