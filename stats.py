@@ -179,7 +179,7 @@ matchers = [(re.compile(pattern), attr) for pattern, attr in [
 	(r'(\d+)% increased Effect of Non-Curse Auras from your Skills on Enemies', 'aura_effect_on_enemies'),
 	(r'(\d+)% increased Effect of Auras from Mines', 'mine_aura_effect'),
 	(r'Link Skills have (\d+)% increased Buff Effect( if you have Linked to a target Recently)?', 'inc_link_effect'),
-	(r'Enemies near your Linked targets have Fire, Cold and Lightning Exposure', 'link_exposure')
+	(r'Enemies near your Linked targets have Fire, Cold and Lightning Exposure', 'link_exposure'),
 ]]
 
 

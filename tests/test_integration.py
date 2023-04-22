@@ -50,7 +50,7 @@ def create_item(mods: list[str], socketed_gems: list[dict], links: Optional[list
 		'inventoryId': 'BodyArmour',
 		'explicitMods': mods,
 		'socketedItems': socketed_gems,
-		'sockets': sockets
+		'sockets': sockets,
 	}
 
 
@@ -187,7 +187,7 @@ class TestAuras(unittest.TestCase):
 				'10% more Effect of your Curses',
 				'10% increased Despair Curse Effect',
 			],
-			socketed_gems=[]
+			socketed_gems=[],
 		)
 		_parse_item(char_stats, item, {})
 		assert char_stats.flat_life == 20
@@ -211,9 +211,9 @@ class TestAuras(unittest.TestCase):
 				'+20% to Quality of Socketed Hex Gems',
 				'Socketed Gems are Supported by Level 20 Blasphemy',
 				'Grants Level 20 Conductivity Skill',
-				'Curse Enemies with Vulnerability on Hit with 48% increased Effect'
+				'Curse Enemies with Vulnerability on Hit with 48% increased Effect',
 			],
-			socketed_gems=[create_gem('Despair', 20, 20)]
+			socketed_gems=[create_gem('Despair', 20, 20)],
 		)
 		# pylint: disable=unbalanced-tuple-unpacking
 		despair, conductivity, vulnerability = parse_skills_in_item(item, char_stats)
@@ -239,15 +239,15 @@ class TestAuras(unittest.TestCase):
 			mods=[
 				'Socketed Gems are Supported by Level 4 Enhance',
 				'Grants Level 23 Determination Skill',
-				'Curse Enemies with Vulnerability on Hit with 48% increased Effect'
+				'Curse Enemies with Vulnerability on Hit with 48% increased Effect',
 			],
 			socketed_gems=[
 				create_gem('Discipline', 20, 20, GemQualityType.Superior, 0),
 				create_gem('Divine Blessing Support', 20, 20, GemQualityType.Superior, 1),
 				create_gem('Empower Support', 3, 20, GemQualityType.Superior, 2),
-				create_gem('Grace', 20, 20, GemQualityType.Superior, 3)
+				create_gem('Grace', 20, 20, GemQualityType.Superior, 3),
 			],
-			links=[[0, 1, 2], [3]]
+			links=[[0, 1, 2], [3]],
 		)
 		# pylint: disable=unbalanced-tuple-unpacking
 		discipline, grace, determination, vulnerability = parse_skills_in_item(item, char_stats)
@@ -295,12 +295,12 @@ class TestAuras(unittest.TestCase):
 		]
 		item = create_item(
 			mods=[],
-			socketed_gems=gem_list
+			socketed_gems=gem_list,
 		)
 		char_stats = Stats(
 			inc_link_effect=20,
 			link_exposure=True,
-			life=2000
+			life=2000,
 		)
 		link_skills = parse_skills_in_item(item, char_stats)
 		with warnings.catch_warnings(record=True) as warning_list:

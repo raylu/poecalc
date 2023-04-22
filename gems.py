@@ -357,7 +357,7 @@ class SkillGem(Gem):
 								r'near it, up to a maximum of (\d+) to (\d+)', formatted_text):
 				values = (
 					min(int(m.group(1)) * self.mine_limit, int(m.group(3))),
-					min(int(m.group(2)) * self.mine_limit, int(m.group(4)))
+					min(int(m.group(2)) * self.mine_limit, int(m.group(4))),
 				)
 				mine_result.append(f'{values[0]} to {values[1]} added Fire Damage')
 
@@ -557,7 +557,7 @@ def parse_gem_descriptor(descriptor: Union[None, str], value: int) -> list[tuple
 		'slam', 'warcry', 'guard', 'channelling', 'travel', 'strike', 'blessing', 'low_max_level', 'intelligence',
 		'cold', 'totem', 'projectile', 'orb', 'stance', 'brand', 'dexterity', 'physical', 'lightning', 'fire', 'aura',
 		'melee', 'chaining', 'herald', 'mine', 'exceptional', 'minion', 'curse', 'hex', 'movement', 'vaal', 'support',
-		'banner', 'golem', 'trap', 'blink', 'random_element', 'arcane'
+		'banner', 'golem', 'trap', 'blink', 'random_element', 'arcane',
 	])
 	required_tags |= (all_tags & set(descriptor.split()))
 	return [(required_tags, value)]

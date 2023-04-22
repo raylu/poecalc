@@ -15,7 +15,7 @@ notable_hashes_for_jewels = [
 	'46882', '55190', '61419', '2491', '54127', '32763', '26196', '33631', '21984', '29712', '48679', '9408',
 	'12613', '16218', '2311', '22994', '40400', '46393', '61305', '12161', '3109', '49080', '17219', '44169',
 	'24970', '36931', '14993', '10532', '23756', '46519', '23984', '51198', '61666', '6910', '49684', '33753',
-	'18436', '11150', '22748', '64583', '61288', '13170', '9797', '41876', '59585'
+	'18436', '11150', '22748', '64583', '61288', '13170', '9797', '41876', '59585',
 ]
 
 
@@ -190,7 +190,7 @@ alt_keystones = {
 	'Maxarius': 'Transcendence',
 	'Cadiro': 'Supreme Decadence',
 	'Caspiro': 'Supreme Ostentation',
-	'Victario': 'Supreme Grandstanding'
+	'Victario': 'Supreme Grandstanding',
 }
 
 
@@ -275,7 +275,7 @@ def process_healthy_mind(jewel_data: dict, tree: dict, radius: int) -> dict:
 			re.sub(
 				r'(\d+)% increased maximum Life',
 				lambda x: f'{scale_effect(x.group(1), 2)}% increased maximum Mana',
-				stat
+				stat,
 			) for stat in node['stats']
 		]
 	return tree

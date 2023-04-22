@@ -77,33 +77,33 @@ class Auras:
             ],
             'Guardian': [
                 f'+{sum(int((1 + effect / 100) * 1) for effect in aura_counter)}% Physical Damage Reduction',
-                'While there are at least five nearby Allies, you and nearby Allies have Onslaught'
+                'While there are at least five nearby Allies, you and nearby Allies have Onslaught',
             ],
             'Necromancer': [
-                f'{sum(int((1 + effect / 100) * 2) for effect in aura_counter)}% increased Attack and Cast Speed'
+                f'{sum(int((1 + effect / 100) * 2) for effect in aura_counter)}% increased Attack and Cast Speed',
             ],
             'Deadeye': [
-                'You and Nearby Allies have Tailwind'
+                'You and Nearby Allies have Tailwind',
             ],
             'Gathering Winds': [
-                'You and Nearby Allies have Tailwind'
+                'You and Nearby Allies have Tailwind',
             ],
             'Unwavering Faith': [
                 f'+{sum(int((1 + effect / 100) * 1) for effect in aura_counter)}% Physical Damage Reduction',
-                f'{sum(round((1 + effect / 100) * 0.2, 1) for effect in aura_counter)}% of Life Regenerated per second'
+                f'{sum(round((1 + effect / 100) * 0.2, 1) for effect in aura_counter)}% of Life Regenerated per second',
             ],
             'Radiant Crusade': [
                 'Deal 10% more Damage',
-                'While there are at least five nearby Allies, you and nearby Allies have Onslaught'
+                'While there are at least five nearby Allies, you and nearby Allies have Onslaught',
             ],
             'Radiant Faith': [
-                f'{char_stats.mana // 10} additional Energy Shield'
+                f'{char_stats.mana // 10} additional Energy Shield',
             ],
             'Unwavering Crusade': [
                 '20% increased Attack, Cast and Movement Speed',
                 '30% increased Area of Effect',
                 'Nearby Enemies are Unnerved',
-                'Nearby Enemies are Intimidated'
+                'Nearby Enemies are Intimidated',
             ],
             'Commander of Darkness': [
                 f'{sum(int((1 + effect / 100) * 3) for effect in aura_counter)}% increased Attack and Cast Speed',
@@ -113,36 +113,36 @@ class Auras:
             'Essence Glutton': [
                 'For each nearby corpse, you and nearby Allies Regenerate 0.2% of Energy Shield per second, '
                     'up to 2.0% per second',
-                'For each nearby corpse, you and nearby Allies Regenerate 5 Mana per second, up to 50 per second'
+                'For each nearby corpse, you and nearby Allies Regenerate 5 Mana per second, up to 50 per second',
             ],
             'Plaguebringer':
                 [
                     'With at least one nearby corpse, you and nearby Allies deal 10% more Damage',
-                    'With at least one nearby corpse, nearby Enemies deal 10% reduced Damage'
+                    'With at least one nearby corpse, nearby Enemies deal 10% reduced Damage',
                 ],
             'Malediction':
                 [
-                    'Nearby Enemies have Malediction'
+                    'Nearby Enemies have Malediction',
                 ],
             'Void Beacon':
                 [
                     'Nearby Enemies have -20% to Cold Resistance',
-                    'Nearby Enemies have -20% to Chaos Resistance'
+                    'Nearby Enemies have -20% to Chaos Resistance',
                 ],
             'Conqueror':
                 [
-                    'Nearby Enemies deal 20% less Damage'  # "hits and ailments" is not recognized by PoB,
+                    'Nearby Enemies deal 20% less Damage',  # "hits and ailments" is not recognized by PoB,
                 ],
             'Worthy Foe':
                 [
                     'Nearby Enemies take 20% increased Damage',
-                    "Your Hits can't be evaded"
+                    "Your Hits can't be evaded",
                 ],
             'Master of Metal':
                 [
                     '+1000 to Armour',
                     'You deal 6 to 12 added Physical Damage for each Impale on Enemy',
-                ]
+                ],
         }
         if node_name not in ascendancies:
             return []
