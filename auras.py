@@ -66,7 +66,7 @@ class Auras:
         if char_stats.link_exposure:
             additional_results.append('Nearby Enemies have -10% to Elemental Resistances')
         if additional_results:
-            results.append(['// Additional Link effects'] + additional_results)
+            results.append(['// Additional Link effects', *additional_results])
         return results
 
     @staticmethod
@@ -178,7 +178,7 @@ class Auras:
                     # TODO: crown of the tyrant
                     aura_string.append(m.group(2))
         if aura_string:
-            aura_string = [f'// {item["name"]} {item["typeLine"]}'] + aura_string
+            aura_string = [f'// {item["name"]} {item["typeLine"]}', *aura_string]
         return aura_string
 
 

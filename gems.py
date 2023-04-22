@@ -273,7 +273,7 @@ class SkillGem(Gem):
 			name = self.original_name
 		special_quality = f'{self.quality_type.name} ' if self.quality_type != GemQualityType.Superior else ''
 		header = f'// {special_quality}{name} (lvl {self.level}, {self.quality}%) {support_comment} {self.aura_effect}%'
-		return [header] + aura_result
+		return [header, *aura_result]
 
 	def get_curse(self) -> list[str]:
 		curse_result: list[str] = []
@@ -331,7 +331,7 @@ class SkillGem(Gem):
 		special_quality = f'{self.quality_type.name} ' if self.quality_type != GemQualityType.Superior else ''
 		header = f'// {special_quality}{name} (lvl {self.level}, {self.quality}%) ' \
 		         f'{support_comment} {self.get_curse_effect()}%'
-		return [header] + curse_result
+		return [header, *curse_result]
 
 	def get_mine(self) -> list[str]:
 		mine_result: list[str] = []
@@ -369,7 +369,7 @@ class SkillGem(Gem):
 		special_quality = f'{self.quality_type.name} ' if self.quality_type != GemQualityType.Superior else ''
 		header = f'// {special_quality}{name} (lvl {self.level}, {self.quality}%) ' \
 				 f'{support_comment} {self.aura_effect}%'
-		return [header] + mine_result
+		return [header, *mine_result]
 
 	def get_link(self) -> list[str]:
 		link_result: list[str] = []
@@ -408,7 +408,7 @@ class SkillGem(Gem):
 		name = self.name
 		special_quality = f'{self.quality_type.name} ' if self.quality_type != GemQualityType.Superior else ''
 		header = f'// {special_quality}{name} (lvl {self.level}, {self.quality}%) {support_comment}'
-		return [header] + link_result
+		return [header, *link_result]
 
 	@staticmethod
 	def translate_effect(effect_id: str, effect_value: int, previous_effect_values: list[float],

@@ -3,6 +3,7 @@ line-length = 120
 select = [
 	'E', 'F', 'I',
 	'COM', 'Q',
+	'RUF',
 ]
 ignore = ['E101']
 [tool.ruff.flake8-quotes]
