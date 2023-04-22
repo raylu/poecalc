@@ -4,8 +4,8 @@ import warnings
 from typing import Optional
 
 import data
-from gems import GemQualityType, parse_skills_in_item
 from auras import Auras
+from gems import GemQualityType, parse_skills_in_item
 from stats import Stats, _parse_item, stats_for_character
 
 gem_data, _, _ = data.load()

@@ -1,14 +1,14 @@
-from dataclasses import dataclass, field
 import json
 import re
-from collections import defaultdict
-from typing import Iterator
 import warnings
+from collections import defaultdict
+from dataclasses import dataclass, field
+from typing import Iterator
 
 import httpx
+
 import gems
 import jewels
-
 
 @dataclass
 class Stats:

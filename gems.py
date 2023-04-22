@@ -3,7 +3,8 @@ import re
 import warnings
 from copy import copy
 from enum import Enum
-from typing import Union, Tuple, Optional, List, TYPE_CHECKING
+from typing import TYPE_CHECKING, List, Optional, Tuple, Union
+
 if TYPE_CHECKING:
 	from stats import Stats
 

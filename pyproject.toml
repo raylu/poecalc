@@ -1,10 +1,12 @@
 [tool.ruff]
 line-length = 120
 select = [
-	'E', 'F', 
+	'E', 'F', 'I',
 	'Q',
 ]
 ignore = ['E101']
 [tool.ruff.flake8-quotes]
 inline-quotes = 'single'
 multiline-quotes = 'single'
+[tool.ruff.isort]
+lines-after-imports = 1

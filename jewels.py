@@ -1,12 +1,12 @@
 import math
 import re
 import warnings
-from typing import Tuple, Optional, no_type_check, TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional, Tuple, no_type_check
+
 if TYPE_CHECKING:
 	from stats import Stats
 
-from data import timeless_node_mapping, TimelessJewelType, legion_passive_mapping
-
+from data import TimelessJewelType, legion_passive_mapping, timeless_node_mapping
 
 legion_passive_effects = legion_passive_mapping()
 

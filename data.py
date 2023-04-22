@@ -1,11 +1,10 @@
+import io
 import json
 import math
 import re
 import warnings
 import zipfile
-import io
 from enum import Enum
-
 
 def load() -> tuple[dict[str, dict], dict, dict]:
 	with open('data/gems.json', 'rb') as f:

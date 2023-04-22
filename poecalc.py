@@ -3,7 +3,6 @@
 
 import sys
 
-
 if len(sys.argv) == 3:
 	import eventlet
 	import eventlet.wsgi
@@ -11,12 +10,12 @@ if len(sys.argv) == 3:
 
 # pylint: disable=wrong-import-position,wrong-import-order
 import mimetypes
+import warnings
 
+from httpx import HTTPStatusError
 from pigwig import PigWig, Response
 from pigwig.exceptions import HTTPException
 
-from httpx import HTTPStatusError
-import warnings
 import auras
 import gems
 import stats

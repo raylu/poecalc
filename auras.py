@@ -1,8 +1,7 @@
 import re
 
-import stats
 import gems
-
+import stats
 
 class Auras:
 
