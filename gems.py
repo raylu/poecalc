@@ -256,7 +256,7 @@ class SkillGem(Gem):
 				aura_result.append(m.group(2))
 			elif m := re.search("nearby allies' (.*)", formatted_text, re.IGNORECASE):
 				aura_result.append(f'Your {m.group(1)}')
-			elif formatted_text.startswith('Aura grants ') or formatted_text.startswith('Buff grants '):
+			elif formatted_text.startswith(('Aura grants ', 'Buff grants ')):
 				aura_result.append(formatted_text[len('Aura grants '):])
 			elif not formatted_text.startswith('You and nearby Non-Minion Allies have a '):
 				raise Exception(f'unhandled formatted line from {self.name}: {formatted_text}')
