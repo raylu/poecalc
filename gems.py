@@ -89,7 +89,7 @@ class Gem:
 		return []
 
 	def __repr__(self) -> str:
-		attrs = ', '.join(f'{k}={repr(v)}' for k, v in self.__dict__.items())
+		attrs = ', '.join(f'{k}={v!r}' for k, v in self.__dict__.items())
 		return f'{self.__class__.__name__}({attrs})'
 
 
@@ -203,7 +203,8 @@ class SkillGem(Gem):
 		return 'aura' in self.tags and 'auraaffectsenemies' not in self.tags
 
 	def get_active_supports(self, support_gems: list[SupportGem], item: dict) -> set[SupportGem]:
-		"""Adds additional Tags from support gems to the active skill gems and filters out support skills that don't apply"""
+		"""Add additional tags from support gems to the active skill gem
+		and filters out support skills that don't apply"""
 		old_tags = None
 		active_supports = set()
 		# as some supports can only support gems with specific tags, this has to be done iteratively
@@ -519,7 +520,8 @@ def parse_skills_in_item(item: dict, char_stats: 'Stats') -> list[SkillGem]:
 			elif 'Grants Level' in mod:
 				active_skills.append(SkillGem(item_gem_dict(mod), char_stats, None))
 			elif m := re.search(r'Curse Enemies with (.*) (on|when) (.*) (\d+)% increased Effect', mod):
-				# todo: distinction between skills granted by an item and curse on hit effects since the latter can't be supported
+				# TODO: distinguish between skills granted by an item and curse on hit effects
+				# since the latter can't be supported
 				skill = SkillGem(item_gem_dict(mod), char_stats, None)
 				skill.inc_curse_effect = int(m.group(4))
 				active_skills.append(skill)

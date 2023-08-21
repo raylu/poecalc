@@ -154,7 +154,8 @@ class TestAuras(unittest.TestCase):
 		assert portal_mine.aura_effect == 50  # 26 (from character) + 24 (Arrogance Support)
 		assert portal_mine.mine_limit == 22  # 15 (base) + 3 (minefield) + 4 (20% divergent minefield)
 
-		assert Auras().analyze_mines(char_stats, active_skills)[1][1] == '66% chance to deal double Damage'  # 2 * 1.5 * 22
+		# 2 * 1.5 * 22 = 66
+		assert Auras().analyze_mines(char_stats, active_skills)[1][1] == '66% chance to deal double Damage'
 
 	def test_supports_for_curses(self) -> None:
 		char_stats = Stats()

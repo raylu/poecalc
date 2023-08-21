@@ -138,7 +138,8 @@ def process_transforming_jewels(tree: dict, skills: dict, stats: 'Stats', charac
 	for jewel, _ in special_jewels:
 		if jewel['typeLine'] == 'Timeless Jewel':
 			tree = process_timeless_jewel(jewel, tree, get_radius(jewel, skills))
-			stats.militant_faith_aura_effect = '1% increased effect of Non-Curse Auras per 10 Devotion' in jewel['explicitMods']
+			stats.militant_faith_aura_effect = \
+					'1% increased effect of Non-Curse Auras per 10 Devotion' in jewel['explicitMods']
 		elif jewel['name'] == 'Healthy Mind':
 			tree = process_healthy_mind(jewel, tree, get_radius(jewel, skills))
 		elif jewel['name'] == 'Split Personality':
@@ -146,7 +147,8 @@ def process_transforming_jewels(tree: dict, skills: dict, stats: 'Stats', charac
 		elif jewel['name'] == 'Might of the Meek':
 			tree = process_might_of_the_meek(jewel, tree, get_radius(jewel, skills))
 		elif jewel['name'] == 'Unnatural Instinct':
-			tree, skills['hashes'] = process_unnatural_instinct(jewel, tree, skills['hashes'], get_radius(jewel, skills))
+			tree, skills['hashes'] = process_unnatural_instinct(
+					jewel, tree, skills['hashes'], get_radius(jewel, skills))
 	return tree, skills, stats
 
 

@@ -125,7 +125,8 @@ def stats_for_character(character: dict, skills: dict) -> tuple[Stats, dict, dic
 	stats.dexterity = round(stats.flat_dex * (1 + stats.inc_dex / 100))
 	stats.flat_life += stats.strength // 2
 	stats.mana = round((stats.flat_mana + stats.intelligence // 2) * (1 + stats.inc_mana / 100))
-	stats.life = round((stats.flat_life + stats.strength // 2) * (1 + stats.inc_life / 100) * (1 + stats.more_life / 100))
+	stats.life = round(
+			(stats.flat_life + stats.strength // 2) * (1 + stats.inc_life / 100) * (1 + stats.more_life / 100))
 	return stats, character, skills
 
 
