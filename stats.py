@@ -86,11 +86,22 @@ def fetch_stats(account: str, character_name: str) -> tuple[Stats, dict, dict]:
 
 def stats_for_character(character: dict, skills: dict) -> tuple[Stats, dict, dict]:
 	tree, masteries = passive_skill_tree()
+	# find the tree for this class
+	class_name = character['character']['class'] # "Scion" or "Ascendant"
+	for class_tree in tree['classes']:
+		if class_tree['name'] == class_name:
+			break
+		ascendancies = (ascendancy['id'] for ascendancy in class_tree['ascendancies'])
+		if class_name in ascendancies:
+			break
+	else:
+		raise AssertionError(f"couldn't find tree for class {class_name}")
+
 	stats = Stats(
 		flat_life=38 + character['character']['level'] * 12,
-		flat_str=tree['classes'][character['character']['classId']]['base_str'],
-		flat_dex=tree['classes'][character['character']['classId']]['base_dex'],
-		flat_int=tree['classes'][character['character']['classId']]['base_int'],
+		flat_str=class_tree['base_str'],
+		flat_dex=class_tree['base_dex'],
+		flat_int=class_tree['base_int'],
 		flat_mana=34 + character['character']['level'] * 6,
 	)
 	tree, skills, stats = jewels.process_transforming_jewels(tree, skills, stats, character)
