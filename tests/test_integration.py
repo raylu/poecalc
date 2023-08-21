@@ -266,16 +266,16 @@ class TestAuras(unittest.TestCase):
 
 	def test_link_mods(self) -> None:
 		character = {
-			'character': {'classId': 0, 'level': 100},
+			'character': {'class': 'Scion', 'level': 100},
 			'items': [],
 		}
 		skills = {
 			'hashes': [
 				60781,  # Inspiring Bond (Link Skills have 20% increased Buff Effect)
 			],
-			'mastery_effects': [
-				26985 << 16,  # Exposure near linked Targets
-			],
+			'mastery_effects': {
+				'': 26985,  # Exposure near linked Targets
+			},
 			'items': [],
 			'jewel_data': {},
 			'hashes_ex': [],
@@ -337,14 +337,14 @@ class TestAuras(unittest.TestCase):
 
 	def test_old_version_passives(self) -> None:
 		character = {
-			'character': {'classId': 0, 'level': 50},
+			'character': {'class': 'Ascendant', 'level': 50},
 			'items': [],
 		}
 		skills = {
 			'hashes': [
 				14674,  # Faster Doom Gain; removed in 3.20
 			],
-			'mastery_effects': [],
+			'mastery_effects': {},
 			'items': [],
 			'jewel_data': {},
 			'hashes_ex': [],
