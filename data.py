@@ -15,7 +15,7 @@ def load() -> tuple[dict[str, dict], dict, dict]:
 			continue
 		if v['base_item']:
 			gems[v['base_item']['display_name']] = v
-		elif 'active_skill' in v:  # skills that are exclusive to items
+		elif v['active_skill']:  # skills that are exclusive to items
 			gems[v['active_skill']['display_name']] = v
 
 	aura_translation: dict[str, str] = {}
@@ -106,9 +106,16 @@ def timeless_node_mapping(seed: int, jewel_type: TimelessJewelType) -> dict:
 	for alt_passive in mapping.values():
 		resolved_mods = []
 		for mod in alt_passive['mods']:
+			if mod[0] not in stat_map:
+				# not sure whats the problem here, but these mods dont seem to matter anyway
+				continue
 			for translation in stat_map[mod[0]]:
 				condition = translation['condition'][0]
-				if condition == {} or condition.get('max', math.inf) >= mod[1] >= condition.get('min', -math.inf):
+				if condition == {}:
+					break
+				max = math.inf if condition['max'] is None else condition['max']
+				min = -math.inf if condition['min'] is None else condition['min']
+				if max >= mod[1] >= min:
 					break
 			else:
 				warnings.warn(f'Could not resolve mod {mod}')

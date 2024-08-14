@@ -40,7 +40,7 @@ class Gem:
 		self.tags = set()
 		if gem_data['tags']:
 			self.tags = {tag.lower() for tag in gem_data['tags']}
-		if gem_data.get('active_skill', {}).get('types'):
+		if (gem_data['active_skill'] and gem_data['active_skill']['types']):
 			self.tags |= {tag.lower() for tag in gem_data['active_skill']['types']}
 		for prop in gem_dict['properties']:
 			if prop['name'] == 'Level':
@@ -68,8 +68,9 @@ class Gem:
 	def iterate_effects(self, get_vaal_effect: bool = True) -> list[tuple[str, int]]:
 		effects = []
 		gem_data = self.get_gem_data(get_vaal_effect)
-		for stat, value in zip(gem_data['static']['stats'], gem_data['per_level'][str(self.level)].get('stats', [])):
-			if stat is None:  # catching some weird corrupted data (rage support)
+		for stat, value in zip(gem_data['static']['stats'], gem_data['per_level'][str(self.level)]['stats'] or []):
+			# catching some weird corrupted data (rage support)
+			if stat is None:
 				continue
 			if value is None:
 				value = stat.get('value')
@@ -101,10 +102,11 @@ class SupportGem(Gem):
 
 	def __init__(self, gem_dict: dict, character_stats: 'Stats', socket: Optional[int]) -> None:
 		super().__init__(gem_dict, character_stats, socket)
-		self.allowed_types = {gem_type.lower() for gem_type in self.get_gem_data()['support_gem']['allowed_types']}
-		self.excluded_types = {gem_type.lower() for gem_type in self.get_gem_data()['support_gem']['excluded_types']}
+		support_gem = self.get_gem_data()['support_gem']
+		self.allowed_types = {gem_type.lower() for gem_type in support_gem['allowed_types'] or []}
+		self.excluded_types = {gem_type.lower() for gem_type in support_gem['excluded_types'] or []}
 		self.support_gems_only = self.get_gem_data()['support_gem']['supports_gems_only'] or (socket is None)
-		self.added_types = {gem_type.lower() for gem_type in self.get_gem_data()['support_gem'].get('added_types', [])}
+		self.added_types = {gem_type.lower() for gem_type in support_gem['added_types'] or []}
 
 	def can_support(self, active_skill_gem: Gem, item: dict) -> bool:
 		if not self.is_linked_to(active_skill_gem, item):
@@ -135,7 +137,7 @@ class SupportGem(Gem):
 		if not gem_data['static']['quality_stats']:
 			return []
 		quality_effect = gem_data['static']['quality_stats'][self.quality_type.value]
-		return [(quality_effect['id'], int(quality_effect['value'] * self.quality / 1000))]
+		return [(id, value*self.quality/1000) for id, value in quality_effect['stats'].items()]
 
 
 class SkillGem(Gem):
@@ -187,17 +189,17 @@ class SkillGem(Gem):
 		quality_type = GemQualityType.Superior if vaal_effect else self.quality_type
 
 		quality_effect = gem_data['static']['quality_stats'][quality_type.value]
-		quality_effect_value = int(quality_effect['value'] * self.quality / 1000)
-		if quality_effect['id'] == 'aura_effect_+%':
-			self.aura_effect += quality_effect_value
-			return []
-		if quality_effect['id'] == 'curse_effect_+%':
-			self.inc_curse_effect += quality_effect_value
-			return []
-		if quality_effect['id'] == 'skill_buff_effect_+%':
-			self.inc_link_effect += quality_effect_value
-			return []
-		return [(quality_effect['id'], quality_effect_value)]
+		for id, value in quality_effect['stats'].items():
+			if id == 'aura_effect_+%':
+				self.aura_effect += value * self.quality / 1000
+				return []
+			if id == 'curse_effect_+%':
+				self.inc_curse_effect += value * self.quality / 1000
+				return []
+			if id == 'skill_buff_effect_+%':
+				self.inc_link_effect += value * self.quality / 1000
+				return []
+		return [(id, value * self.quality / 1000) for id, value in quality_effect['stats'].items()]
 
 	def applies_to_allies(self) -> bool:
 		return 'aura' in self.tags and 'auraaffectsenemies' not in self.tags
@@ -331,7 +333,7 @@ class SkillGem(Gem):
 		name = self.name
 		special_quality = f'{self.quality_type.name} ' if self.quality_type != GemQualityType.Superior else ''
 		header = f'// {special_quality}{name} (lvl {self.level}, {self.quality}%) ' \
-		         f'{support_comment} {self.get_curse_effect()}%'
+				f'{support_comment} {self.get_curse_effect()}%'
 		return [header, *curse_result]
 
 	def get_mine(self) -> list[str]:
@@ -343,19 +345,19 @@ class SkillGem(Gem):
 			if not formatted_text:
 				continue
 			if m := re.search(r'Each Mine applies (\d+)% increased Damage Taken to Enemies '
-			                  r'near it, up\nto a maximum of (\d+)%', formatted_text):
+						r'near it, up\nto a maximum of (\d+)%', formatted_text):
 				value = min(int(m.group(1)) * self.mine_limit, int(m.group(2)))
 				mine_result.append(f'Nearby Enemies take {value}% increased damage')
 			elif m := re.search(r'Each Mine applies (\d+)% chance to deal Double Damage to Hits against Enemies '
-								r'near it, up to a maximum of (\d+)%', formatted_text):
+						r'near it, up to a maximum of (\d+)%', formatted_text):
 				value = min(int(m.group(1)) * self.mine_limit, int(m.group(2)))
 				mine_result.append(f'{value}% chance to deal double Damage')
 			elif m := re.search(r'Each Mine applies (\d+)% increased Critical Strike Chance to Hits against Enemies '
-								r'near it, up to a maximum of (\d+)%', formatted_text):
+						r'near it, up to a maximum of (\d+)%', formatted_text):
 				value = min(int(m.group(1)) * self.mine_limit, int(m.group(2)))
 				mine_result.append(f'{value}% increased Critical Strike Chance')
 			elif m := re.search(r'Each Mine Adds (\d+) to (\d+) Fire Damage to Hits against Enemies '
-								r'near it, up to a maximum of (\d+) to (\d+)', formatted_text):
+						r'near it, up to a maximum of (\d+) to (\d+)', formatted_text):
 				values = (
 					min(int(m.group(1)) * self.mine_limit, int(m.group(3))),
 					min(int(m.group(2)) * self.mine_limit, int(m.group(4))),
@@ -369,7 +371,7 @@ class SkillGem(Gem):
 		name = self.name
 		special_quality = f'{self.quality_type.name} ' if self.quality_type != GemQualityType.Superior else ''
 		header = f'// {special_quality}{name} (lvl {self.level}, {self.quality}%) ' \
-				 f'{support_comment} {self.aura_effect}%'
+				f'{support_comment} {self.aura_effect}%'
 		return [header, *mine_result]
 
 	def get_link(self) -> list[str]:
@@ -420,7 +422,11 @@ class SkillGem(Gem):
 
 		for translation in translation_dict[effect_id]:
 			condition = translation['condition'][0]
-			if condition == {} or condition.get('max', math.inf) >= effect_value >= condition.get('min', -math.inf):
+			if condition == {}:
+				break
+			max = math.inf if condition['max'] is None else condition['max']
+			min = -math.inf if condition['min'] is None else condition['min']
+			if max >= effect_value >= min:
 				break
 		else:
 			if effect_value == 0:
