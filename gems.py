@@ -41,8 +41,7 @@ class Gem:
 		if gem_data['tags']:
 			self.tags = {tag.lower() for tag in gem_data['tags']}
 		if (gem_data['active_skill'] and gem_data['active_skill']['types']):
-			self.tags |= {tag.lower()
-						  for tag in gem_data['active_skill']['types']}
+			self.tags |= {tag.lower() for tag in gem_data['active_skill']['types']}
 		for prop in gem_dict['properties']:
 			if prop['name'] == 'Level':
 				if m := re.search(r'(\d+)', prop['values'][0][0]):
@@ -104,14 +103,10 @@ class SupportGem(Gem):
 	def __init__(self, gem_dict: dict, character_stats: 'Stats', socket: Optional[int]) -> None:
 		super().__init__(gem_dict, character_stats, socket)
 		support_gem = self.get_gem_data()['support_gem']
-		self.allowed_types = {gem_type.lower()
-							  for gem_type in support_gem['allowed_types'] or []}
-		self.excluded_types = {gem_type.lower()
-							   for gem_type in support_gem['excluded_types'] or []}
-		self.support_gems_only = self.get_gem_data(
-		)['support_gem']['supports_gems_only'] or (socket is None)
-		self.added_types = {gem_type.lower()
-							for gem_type in support_gem['added_types'] or []}
+		self.allowed_types = {gem_type.lower() for gem_type in support_gem['allowed_types'] or []}
+		self.excluded_types = {gem_type.lower() for gem_type in support_gem['excluded_types'] or []}
+		self.support_gems_only = self.get_gem_data()['support_gem']['supports_gems_only'] or (socket is None)
+		self.added_types = {gem_type.lower() for gem_type in support_gem['added_types'] or []}
 
 	def can_support(self, active_skill_gem: Gem, item: dict) -> bool:
 		if not self.is_linked_to(active_skill_gem, item):
@@ -134,8 +129,7 @@ class SupportGem(Gem):
 			# Socketed gems and skills from items are always considered to be linked together
 			return True
 		group = item['sockets'][self.socket]['group']
-		linked_sockets = [i for i, socket in enumerate(
-			item['sockets']) if socket['group'] == group]
+		linked_sockets = [i for i, socket in enumerate(item['sockets']) if socket['group'] == group]
 		return active_gem.socket in linked_sockets
 
 	def quality_effect(self, vaal_effect: bool) -> List[Tuple[str, int]]:
@@ -160,8 +154,7 @@ class SkillGem(Gem):
 		if 'hybrid' in gem_dict:
 			self.original_name = gem_dict['hybrid']['baseTypeName']
 		self.supports = []
-		self.tags |= {gem_type.lower() for gem_type in self.get_gem_data()[
-			'active_skill']['types']}
+		self.tags |= {gem_type.lower() for gem_type in self.get_gem_data()['active_skill']['types']}
 		self.tags.add(self.name.lower())
 
 	def get_curse_effect(self) -> int:
@@ -175,8 +168,7 @@ class SkillGem(Gem):
 		return round(((1 + inc / 100) * (1 + more / 100) - 1) * 100)
 
 	def add_effects(self) -> None:
-		self.aura_effect += self.character_stats.aura_effect + \
-			self.character_stats.specific_aura_effect[self.name]
+		self.aura_effect += self.character_stats.aura_effect + self.character_stats.specific_aura_effect[self.name]
 		if 'auraaffectsenemies' in self.tags:
 			self.aura_effect += self.character_stats.aura_effect_on_enemies
 		if 'remotemined' in self.tags:
@@ -260,7 +252,7 @@ class SkillGem(Gem):
 		previous_value: list[float] = []
 		for stat, value in self.iterate_effects(get_vaal_effect):
 			formatted_text, previous_value = self.translate_effect(stat, value, previous_value,
-																   self.aura_effect, aura_translation)
+					self.aura_effect, aura_translation)
 			if not formatted_text:
 				continue
 			if m := re.search('you and nearby allies( deal| have| gain| are|) (.*)', formatted_text, re.IGNORECASE):
@@ -270,24 +262,20 @@ class SkillGem(Gem):
 			elif formatted_text.startswith(('Aura grants ', 'Buff grants ')):
 				aura_result.append(formatted_text[len('Aura grants '):])
 			elif not formatted_text.startswith('You and nearby Non-Minion Allies have a '):
-				raise Exception(f'unhandled formatted line from {
-								self.name}: {formatted_text}')
+				raise Exception(f'unhandled formatted line from {self.name}: {formatted_text}')
 
 		if not aura_result:
 			return []
 
 		if self.supports:
-			support_comment = '(' + ', '.join(
-				f'{sup.name} {sup.level}' for sup in self.supports) + ')'
+			support_comment = '(' + ', '.join(f'{sup.name} {sup.level}' for sup in self.supports) + ')'
 		else:
 			support_comment = ''
 		name = self.name
 		if name.startswith('Vaal') and not get_vaal_effect:
 			name = self.original_name
-		special_quality = f'{
-			self.quality_type.name} ' if self.quality_type != GemQualityType.Superior else ''
-		header = f'// {special_quality}{name} (lvl {self.level}, {self.quality}%) {
-			support_comment} {self.aura_effect}%'
+		special_quality = f'{self.quality_type.name} ' if self.quality_type != GemQualityType.Superior else ''
+		header = f'// {special_quality}{name} (lvl {self.level}, {self.quality}%) {support_comment} {self.aura_effect}%'
 		return [header, *aura_result]
 
 	def get_curse(self) -> list[str]:
@@ -295,7 +283,7 @@ class SkillGem(Gem):
 		previous_value: list[float] = []
 		for stat, value in self.iterate_effects():
 			formatted_text, previous_value = self.translate_effect(stat, value, previous_value,
-																   self.get_curse_effect(), curse_translation)
+					self.get_curse_effect(), curse_translation)
 			if not formatted_text:
 				continue
 			if m := re.search(r'Other effects on Cursed enemies expire (\d+)% slower', formatted_text):
@@ -304,61 +292,48 @@ class SkillGem(Gem):
 				curse_result.append(f'{m.group(1)}% more Duration of Ailments')
 			elif 'Cursed Enemies are Debilitated' in formatted_text:
 				# debilitate is not recognised by pob
-				curse_result += ['Nearby Enemies deal 10% less damage',
-								 'Nearby Enemies have 20% less movement speed.']
+				curse_result += ['Nearby Enemies deal 10% less damage', 'Nearby Enemies have 20% less movement speed.']
 			elif 'to Hits against Cursed Enemies' in formatted_text:
-				curse_result.append(formatted_text.replace(
-					'against Cursed Enemies', ''))
+				curse_result.append(formatted_text.replace('against Cursed Enemies', ''))
 			elif m := re.search(r'Cursed enemies grant (\d+) (Life|Mana) when Hit by (Attacks|Spells)', formatted_text):
-				curse_result.append(
-					f'+{m.group(1)} {m.group(2)} gained for each Enemy hit by your {m.group(3)}')
+				curse_result.append(f'+{m.group(1)} {m.group(2)} gained for each Enemy hit by your {m.group(3)}')
 			elif m := re.search(r'Cursed Enemies grant (.*)% (Life|Mana) Leech when Hit by (Attack|Spell)s',
 								formatted_text, re.IGNORECASE):
-				curse_result.append(f'{m.group(1)}% of {
-									m.group(3)} Damage leeched as {m.group(2)}')
+				curse_result.append(f'{m.group(1)}% of {m.group(3)} Damage leeched as {m.group(2)}')
 			elif m := re.search(r'Cursed enemies grant (\d+) (Life|Mana) when Killed', formatted_text):
-				curse_result.append(
-					f'+{m.group(1)} {m.group(2)} gained on kill')
+				curse_result.append(f'+{m.group(1)} {m.group(2)} gained on kill')
 			elif m := re.search('Hits (against|on) Cursed Enemies have (.*)', formatted_text):
 				curse_result.append(m.group(2))
 			elif m := re.search('Ailments inflicted on Cursed Enemies (.*)', formatted_text):
 				curse_result.append(f'Damaging Ailments {m.group(1)}')
 			elif m := re.search(r'Cursed enemies take (\d+)% increased Damage from Damage over Time effects',
 								formatted_text):
-				curse_result.append(f'Nearby Enemies have {
-									m.group(1)}% increased Damage over Time taken')
+				curse_result.append(f'Nearby Enemies have {m.group(1)}% increased Damage over Time taken')
 			elif m := re.search(r'Cursed enemies take (\d+)% increased Damage from Projectile Hits', formatted_text):
-				curse_result.append(f'Nearby Enemies take {
-									m.group(1)}% increased Projectile Damage')
+				curse_result.append(f'Nearby Enemies take {m.group(1)}% increased Projectile Damage')
 			elif m := re.search(r'(Ignite|Freeze|Shock)(|s) on Cursed enemies (have|has) (\d+)% increased Duration',
 								formatted_text):
-				curse_result.append(f'{m.group(4)}% increased {
-									m.group(1)} Duration on Enemies')
+				curse_result.append(f'{m.group(4)}% increased {m.group(1)} Duration on Enemies')
 			elif 'increased Duration of Elemental Ailments on Cursed enemies' in formatted_text:
-				curse_result.append(
-					formatted_text.replace('on cursed Enemies', ''))
+				curse_result.append(formatted_text.replace('on cursed Enemies', ''))
 			elif m := re.search(r'Hits have (\d+)% chance to (.*) Cursed Enemies', formatted_text):
-				curse_result.append(f'{m.group(1)}% Chance to {
-									m.group(2)} Enemies on Hit')
+				curse_result.append(f'{m.group(1)}% Chance to {m.group(2)} Enemies on Hit')
 			elif any(substr in formatted_text.lower() for substr in ['split', 'charge', 'overkill']):
 				# not recognised by pob at all
 				continue
 			elif m := re.search('^Cursed(.*)Enemies (.*)', formatted_text, re.IGNORECASE):
 				curse_result.append(f'Nearby Enemies {m.group(2)}')
 			else:
-				print(f'unhandled formatted line from {
-					  self.name}: {formatted_text}')
+				print(f'unhandled formatted line from {self.name}: {formatted_text}')
 
 		if self.supports:
-			support_comment = '(' + ', '.join(
-				f'{sup.name} {sup.level}' for sup in self.supports) + ')'
+			support_comment = '(' + ', '.join(f'{sup.name} {sup.level}' for sup in self.supports) + ')'
 		else:
 			support_comment = ''
 		name = self.name
-		special_quality = f'{
-			self.quality_type.name} ' if self.quality_type != GemQualityType.Superior else ''
+		special_quality = f'{self.quality_type.name} ' if self.quality_type != GemQualityType.Superior else ''
 		header = f'// {special_quality}{name} (lvl {self.level}, {self.quality}%) ' \
-			f'{support_comment} {self.get_curse_effect()}%'
+				f'{support_comment} {self.get_curse_effect()}%'
 		return [header, *curse_result]
 
 	def get_mine(self) -> list[str]:
@@ -370,38 +345,33 @@ class SkillGem(Gem):
 			if not formatted_text:
 				continue
 			if m := re.search(r'Each Mine applies (\d+)% increased Damage Taken to Enemies '
-							  r'near it, up\nto a maximum of (\d+)%', formatted_text):
+						r'near it, up\nto a maximum of (\d+)%', formatted_text):
 				value = min(int(m.group(1)) * self.mine_limit, int(m.group(2)))
-				mine_result.append(f'Nearby Enemies take {
-								   value}% increased damage')
+				mine_result.append(f'Nearby Enemies take {value}% increased damage')
 			elif m := re.search(r'Each Mine applies (\d+)% chance to deal Double Damage to Hits against Enemies '
-								r'near it, up to a maximum of (\d+)%', formatted_text):
+						r'near it, up to a maximum of (\d+)%', formatted_text):
 				value = min(int(m.group(1)) * self.mine_limit, int(m.group(2)))
 				mine_result.append(f'{value}% chance to deal double Damage')
 			elif m := re.search(r'Each Mine applies (\d+)% increased Critical Strike Chance to Hits against Enemies '
-								r'near it, up to a maximum of (\d+)%', formatted_text):
+						r'near it, up to a maximum of (\d+)%', formatted_text):
 				value = min(int(m.group(1)) * self.mine_limit, int(m.group(2)))
-				mine_result.append(
-					f'{value}% increased Critical Strike Chance')
+				mine_result.append(f'{value}% increased Critical Strike Chance')
 			elif m := re.search(r'Each Mine Adds (\d+) to (\d+) Fire Damage to Hits against Enemies '
-								r'near it, up to a maximum of (\d+) to (\d+)', formatted_text):
+						r'near it, up to a maximum of (\d+) to (\d+)', formatted_text):
 				values = (
 					min(int(m.group(1)) * self.mine_limit, int(m.group(3))),
 					min(int(m.group(2)) * self.mine_limit, int(m.group(4))),
 				)
-				mine_result.append(f'{values[0]} to {
-								   values[1]} added Fire Damage')
+				mine_result.append(f'{values[0]} to {values[1]} added Fire Damage')
 
 		if self.supports:
-			support_comment = '(' + ', '.join(
-				f'{sup.name} {sup.level}' for sup in self.supports) + ')'
+			support_comment = '(' + ', '.join(f'{sup.name} {sup.level}' for sup in self.supports) + ')'
 		else:
 			support_comment = ''
 		name = self.name
-		special_quality = f'{
-			self.quality_type.name} ' if self.quality_type != GemQualityType.Superior else ''
+		special_quality = f'{self.quality_type.name} ' if self.quality_type != GemQualityType.Superior else ''
 		header = f'// {special_quality}{name} (lvl {self.level}, {self.quality}%) ' \
-			f'{support_comment} {self.aura_effect}%'
+				f'{support_comment} {self.aura_effect}%'
 		return [header, *mine_result]
 
 	def get_link(self) -> list[str]:
@@ -415,14 +385,13 @@ class SkillGem(Gem):
 				'Destructive Link effect is not recognized by PoB. Manually adjust Mainhand critical strike chance')
 		for stat, value in self.iterate_effects():
 			formatted_text, previous_value = self.translate_effect(stat, value, previous_value,
-																   self.inc_link_effect, aura_translation)
+					self.inc_link_effect, aura_translation)
 
 			if not formatted_text:
 				continue
 
 			elif m := re.search(r'(\d+)% of Damage from Hits against target is taken', formatted_text):
-				link_result.append(
-					f'{m.group(1)}% less damage taken from Hits')
+				link_result.append(f'{m.group(1)}% less damage taken from Hits')
 			elif m := re.search(r'Linked target takes (\d+)% less Damage', formatted_text):
 				link_result.append(f'{m.group(1)}% less damage taken')
 			elif m := re.search(r'Linked target gains Added Fire Damage equal to (\d+)% of your', formatted_text):
@@ -436,20 +405,17 @@ class SkillGem(Gem):
 		if not link_result:
 			return []
 		if self.supports:
-			support_comment = '(' + ', '.join(
-				f'{sup.name} {sup.level}' for sup in self.supports) + ')'
+			support_comment = '(' + ', '.join(f'{sup.name} {sup.level}' for sup in self.supports) + ')'
 		else:
 			support_comment = ''
 		name = self.name
-		special_quality = f'{
-			self.quality_type.name} ' if self.quality_type != GemQualityType.Superior else ''
-		header = f'// {special_quality}{name} (lvl {self.level}, {self.quality}%) {
-			support_comment}'
+		special_quality = f'{self.quality_type.name} ' if self.quality_type != GemQualityType.Superior else ''
+		header = f'// {special_quality}{name} (lvl {self.level}, {self.quality}%) {support_comment}'
 		return [header, *link_result]
 
 	@staticmethod
 	def translate_effect(effect_id: str, effect_value: int, previous_effect_values: list[float],
-						 scaling_factor: int, translation_dict: dict) -> Tuple[str, list[float]]:
+				scaling_factor: int, translation_dict: dict) -> Tuple[str, list[float]]:
 		"""Finds the correct translation for an effect depending on the effects value"""
 		if effect_id not in translation_dict or effect_id == 'display_link_stuff':
 			return '', []
@@ -468,8 +434,7 @@ class SkillGem(Gem):
 			raise Exception(
 				f'Could not find the right translation for {effect_id} '
 				f'(value: {effect_value}) in {translation_dict[effect_id]}')
-		value = scaled_value(effect_value, scaling_factor,
-							 translation['index_handlers'][0])
+		value = scaled_value(effect_value, scaling_factor, translation['index_handlers'][0])
 		previous_effect_values.append(value)
 		if len(translation['format']) == len(previous_effect_values):
 			formatted_values: list[Union[float, str]] = []
@@ -548,8 +513,7 @@ def parse_skills_in_item(item: dict, char_stats: 'Stats') -> list[SkillGem]:
 			else:
 				active_skills.append(SkillGem(gem, char_stats, gem['socket']))
 		except KeyError:
-			warnings.warn(
-				f'Item "{gem["baseType"]}" was not recognized and could not be parsed.')
+			warnings.warn(f'Item "{gem["baseType"]}" was not recognized and could not be parsed.')
 
 	level_mods = copy(char_stats.global_gem_level_increase)
 	quality_mods = copy(char_stats.global_gem_quality_increase)
@@ -558,11 +522,9 @@ def parse_skills_in_item(item: dict, char_stats: 'Stats') -> list[SkillGem]:
 			if m := re.search(r'(.\d+) to Level of Socketed (.*)Gems', mod):
 				level_mods += parse_gem_descriptor(m.group(2), int(m.group(1)))
 			elif m := re.search(r'(.\d+)% to Quality of Socketed (.*)Gems', mod):
-				quality_mods += parse_gem_descriptor(
-					m.group(2), int(m.group(1)))
+				quality_mods += parse_gem_descriptor(m.group(2), int(m.group(1)))
 			elif 'Grants Level' in mod:
-				active_skills.append(
-					SkillGem(item_gem_dict(mod), char_stats, None))
+				active_skills.append(SkillGem(item_gem_dict(mod), char_stats, None))
 			elif m := re.search(r'Curse Enemies with (.*) (on|when) (.*) (\d+)% increased Effect', mod):
 				# TODO: distinguish between skills granted by an item and curse on hit effects
 				# since the latter can't be supported
@@ -570,8 +532,7 @@ def parse_skills_in_item(item: dict, char_stats: 'Stats') -> list[SkillGem]:
 				skill.inc_curse_effect = int(m.group(4))
 				active_skills.append(skill)
 			elif 'Socketed Gems are Supported by Level' in mod:
-				support_gems.append(SupportGem(
-					item_gem_dict(mod), char_stats, None))
+				support_gems.append(SupportGem(item_gem_dict(mod), char_stats, None))
 
 	for gem in support_gems + active_skills:
 		if gem.socket is not None:
