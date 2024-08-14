@@ -40,7 +40,7 @@ class Gem:
         self.tags = set()
         if gem_data['tags']:
             self.tags = {tag.lower() for tag in gem_data['tags']}
-        if (gem_data["active_skill"] and gem_data['active_skill']["types"]):
+        if (gem_data['active_skill'] and gem_data['active_skill']['types']):
             self.tags |= {tag.lower()
                           for tag in gem_data['active_skill']['types']}
         for prop in gem_dict['properties']:
@@ -69,7 +69,7 @@ class Gem:
     def iterate_effects(self, get_vaal_effect: bool = True) -> list[tuple[str, int]]:
         effects = []
         gem_data = self.get_gem_data(get_vaal_effect)
-        for stat, value in zip(gem_data['static']['stats'], gem_data['per_level'][str(self.level)]["stats"] or []):
+        for stat, value in zip(gem_data['static']['stats'], gem_data['per_level'][str(self.level)]['stats'] or []):
             # catching some weird corrupted data (rage support)
             if stat is None:
                 continue
@@ -143,7 +143,7 @@ class SupportGem(Gem):
         if not gem_data['static']['quality_stats']:
             return []
         quality_effect = gem_data['static']['quality_stats'][self.quality_type.value]
-        return [(id, value*self.quality/1000) for id, value in quality_effect["stats"].items()]
+        return [(id, value*self.quality/1000) for id, value in quality_effect['stats'].items()]
 
 
 class SkillGem(Gem):
@@ -197,7 +197,7 @@ class SkillGem(Gem):
         quality_type = GemQualityType.Superior if vaal_effect else self.quality_type
 
         quality_effect = gem_data['static']['quality_stats'][quality_type.value]
-        for id, value in quality_effect["stats"].items():
+        for id, value in quality_effect['stats'].items():
             if id == 'aura_effect_+%':
                 self.aura_effect += value * self.quality / 1000
                 return []
@@ -207,7 +207,7 @@ class SkillGem(Gem):
             if id == 'skill_buff_effect_+%':
                 self.inc_link_effect += value * self.quality / 1000
                 return []
-        return [(id, value * self.quality / 1000) for id, value in quality_effect["stats"].items()]
+        return [(id, value * self.quality / 1000) for id, value in quality_effect['stats'].items()]
 
     def applies_to_allies(self) -> bool:
         return 'aura' in self.tags and 'auraaffectsenemies' not in self.tags
@@ -426,8 +426,7 @@ class SkillGem(Gem):
             elif m := re.search(r'Linked target takes (\d+)% less Damage', formatted_text):
                 link_result.append(f'{m.group(1)}% less damage taken')
             elif m := re.search(r'Linked target gains Added Fire Damage equal to (\d+)% of your', formatted_text):
-                value = int(self.character_stats.life * (int(m.group(1)
-                                                             ) / 100) * (1 + self.inc_link_effect / 100))
+                value = int(self.character_stats.life * (int(m.group(1)) / 100) * (1 + self.inc_link_effect / 100))
                 link_result.append(f'{value} to {value} Added Fire Damage')
             elif m := re.search(r'Linked target Recovers (\d+) Life when they Block', formatted_text):
                 link_result.append(f'Recover {m.group(1)} Life when you Block')
@@ -459,8 +458,8 @@ class SkillGem(Gem):
             condition = translation['condition'][0]
             if condition == {}:
                 break
-            max = math.inf if condition["max"] is None else condition["max"]
-            min = -math.inf if condition["min"] is None else condition["min"]
+            max = math.inf if condition['max'] is None else condition['max']
+            min = -math.inf if condition['min'] is None else condition['min']
             if max >= effect_value >= min:
                 break
         else:

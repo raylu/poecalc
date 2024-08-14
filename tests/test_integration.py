@@ -139,7 +139,7 @@ class TestAuras(unittest.TestCase):
 		assert determination.quality == 36  # 20 + 16 (3 Enhance)
 		assert determination.aura_effect == 78  # 0 + 44 (5 Awakened Generosity) + 34 (20 20 Divine Blessing)
 
-	@unittest.skip("Assumes old gem data")
+	@unittest.skip('Assumes old gem data')
 	def test_supports_for_mines(self) -> None:
 		char_stats = Stats()
 		char_stats.mine_aura_effect = 26

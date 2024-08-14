@@ -113,8 +113,8 @@ def timeless_node_mapping(seed: int, jewel_type: TimelessJewelType) -> dict:
 				condition = translation['condition'][0]
 				if condition == {}:
 					break
-				max = math.inf if condition["max"] is None else condition["max"]
-				min = -math.inf if condition["min"] is None else condition["min"]
+				max = math.inf if condition['max'] is None else condition['max']
+				min = -math.inf if condition['min'] is None else condition['min']
 				if max >= mod[1] >= min:
 					break
 			else:
