@@ -145,7 +145,8 @@ def iter_passives(tree: dict, masteries: dict, skills: dict) -> Iterator[tuple[s
 			cluster_jewel_nodes.update(jewel['subgraph']['nodes'])
 	for h in skills['hashes_ex']:
 		node = cluster_jewel_nodes[str(h)]
-		yield node.get('name', ''), node['stats']
+		if 'stats' in node:
+			yield node.get('name', ''), node['stats']
 
 	for mastery_effect in skills['mastery_effects'].values():
 		node = masteries[mastery_effect]
