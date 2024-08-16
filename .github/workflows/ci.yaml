@@ -33,6 +33,8 @@ jobs:
         wget -q https://raw.githubusercontent.com/PathOfBuildingCommunity/PathOfBuilding/dev/src/Data/TimelessJewelData/LegionPassives.lua
         wget -q https://raw.githubusercontent.com/Liberatorist/TimelessEmulator/master/TimelessEmulator/Build/Output/TimelessJewels/TimelessJewels.zip
         unzip TimelessJewels.zip -d TimelessJewels
+        cd ..
+        python3 data.py
     - run: python3 -m unittest --verbose
     - run: mypy .
     - run: ruff check --output-format=github .

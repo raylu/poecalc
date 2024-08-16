@@ -19,4 +19,5 @@ wget https://raw.githubusercontent.com/Liberatorist/TimelessEmulator/master/Time
 unzip TimelessJewels.zip -d TimelessJewels
 ```
 2. `pip3 install -r requirements.txt`
-3. `./poecalc.py`
+3. `python3 data.py` # prepare data.db
+4. `./poecalc.py`

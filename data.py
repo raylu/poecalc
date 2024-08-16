@@ -6,49 +6,62 @@ import warnings
 import zipfile
 from enum import Enum
 
-def load() -> tuple[dict[str, dict], dict, dict]:
+import sqlitedict  # type: ignore
+
+def prepare_data() -> None:
 	with open('data/gems.json', 'rb') as f:
 		raw_gems: dict[str, dict] = json.load(f)
-	gems: dict[str, dict] = {}
-	for k, v in raw_gems.items():
-		if k.endswith(('Royale', 'Triggered')):
-			continue
-		if v['base_item']:
-			gems[v['base_item']['display_name']] = v
-		elif v['active_skill']:  # skills that are exclusive to items
-			gems[v['active_skill']['display_name']] = v
+	with _sqlite_dict('gems', 'n') as gems:
+		for k, v in raw_gems.items():
+			if k.endswith(('Royale', 'Triggered')):
+				continue
+			if v['base_item']:
+				gems[v['base_item']['display_name']] = v
+			elif v['active_skill']:  # skills that are exclusive to items
+				gems[v['active_skill']['display_name']] = v
+		gems.commit()
 
-	aura_translation: dict[str, str] = {}
-	with open('data/aura_skill.json', 'rb') as f:
-		raw_text: list[dict] = json.load(f)
-	prefixes = ['You and nearby', 'Your and nearby', 'Aura grants', 'Buff grants', 'Each Mine']
-	for translation in raw_text:
-		for k in translation['ids']:
-			translated = translation['English'][0]
-			if any(translated['string'].startswith(prefix + ' ') for prefix in prefixes):
-				aura_translation[k] = translation['English']
+	with _sqlite_dict('aura_translation', 'w') as aura_translation:
+		with open('data/aura_skill.json', 'rb') as f:
+			raw_text: list[dict] = json.load(f)
+		prefixes = ['You and nearby', 'Your and nearby', 'Aura grants', 'Buff grants', 'Each Mine']
+		for translation in raw_text:
+			for k in translation['ids']:
+				translated = translation['English'][0]
+				if any(translated['string'].startswith(prefix + ' ') for prefix in prefixes):
+					aura_translation[k] = translation['English']
 
-	with open('data/buff_skill.json', 'rb') as f:
-		raw_text = json.load(f)
-	substrings = ['Link Skill', 'Linked Target', 'taken from your Energy']
-	for translation in raw_text:
-		for k in translation['ids']:
-			translated = translation['English'][0]
-			if any(substring.lower() in translated['string'].lower() for substring in substrings):
-				aura_translation[k] = translation['English']
+		with open('data/buff_skill.json', 'rb') as f:
+			raw_text = json.load(f)
+		substrings = ['Link Skill', 'Linked Target', 'taken from your Energy']
+		for translation in raw_text:
+			for k in translation['ids']:
+				translated = translation['English'][0]
+				if any(substring.lower() in translated['string'].lower() for substring in substrings):
+					aura_translation[k] = translation['English']
 
-	curse_translation: dict[str, str] = {}
+		aura_translation.commit()
+
 	with open('data/curse_skill.json', 'rb') as f:
 		raw_text = json.load(f)
-		identifiers = ['cursed enemies', 'cursed rare']
+	identifiers = ['cursed enemies', 'cursed rare']
+	with _sqlite_dict('curse_translation', 'w') as curse_translation:
 		for translation in raw_text:
 			for k in translation['ids']:
 				translated = translation['English'][0]
 				if any(identifier in translated['string'].lower() for identifier in identifiers):
 					curse_translation[k] = translation['English']
+		curse_translation.commit()
 
+def load() -> tuple[dict[str, dict], dict, dict]:
+	gems = _sqlite_dict('gems', 'r')
+	aura_translation = _sqlite_dict('aura_translation', 'r')
+	curse_translation = _sqlite_dict('curse_translation', 'r')
 	return gems, aura_translation, curse_translation
 
+def _sqlite_dict(table: str, flag: str) -> sqlitedict.SqliteDict:
+	return sqlitedict.SqliteDict('data.db', tablename=table, flag=flag,
+			journal_mode='OFF', encode=json.dumps, decode=json.loads)
 
 def legion_passive_mapping() -> dict:
 	""" Maps names of timeless legion passives to their effects """
@@ -128,3 +141,6 @@ def timeless_node_mapping(seed: int, jewel_type: TimelessJewelType) -> dict:
 		alt_passive['mods'] = resolved_mods
 
 	return mapping
+
+if __name__ == '__main__':
+	prepare_data()
