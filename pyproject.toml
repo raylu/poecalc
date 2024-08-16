@@ -1,5 +1,6 @@
 [tool.ruff]
 line-length = 120
+[tool.ruff.lint]
 select = [
 	'E', 'F', 'I',
 	'YTT', 'COM', 'T10', 'ISC', 'G', 'PIE', 'Q', 'RSE',
@@ -7,8 +8,8 @@ select = [
 	'RUF',
 ]
 ignore = ['E101', 'ISC002']
-[tool.ruff.flake8-quotes]
+[tool.ruff.lint.flake8-quotes]
 inline-quotes = 'single'
 multiline-quotes = 'single'
-[tool.ruff.isort]
+[tool.ruff.lint.isort]
 lines-after-imports = 1
