@@ -282,7 +282,7 @@ class TestAuras(unittest.TestCase):
 			'jewel_data': {},
 			'hashes_ex': [],
 		}
-		stats, character, skills = stats_for_character(character, skills)
+		stats, character, skills, _ = stats_for_character(character, skills, False)
 		assert stats.inc_link_effect == 20
 		assert stats.link_exposure is True
 
@@ -315,27 +315,30 @@ class TestAuras(unittest.TestCase):
 			assert len(warning_list) == 2
 
 	def test_data_is_present(self) -> None:
-		assert os.path.exists('data')
-		assert os.path.exists('data/aura_skill.json')
-		assert os.path.exists('data/curse_skill.json')
-		assert os.path.exists('data/passive_skill.json')
-		assert os.path.exists('data/buff_skill.json')
-		assert os.path.exists('data/skill_tree.json')
-		assert os.path.exists('data/gems.json')
-		assert os.path.exists('data/LegionPassives.lua')
-		assert os.path.exists('data/TimelessJewels.zip')
-		assert os.path.exists('data/TimelessJewels')
-		assert os.path.exists('data/TimelessJewels/brutal_restraint.zip')
-		assert os.path.exists('data/TimelessJewels/brutal_restraint_passives.txt')
-		assert os.path.exists('data/TimelessJewels/elegant_hubris.zip')
-		assert os.path.exists('data/TimelessJewels/elegant_hubris_passives.txt')
-		assert os.path.exists('data/TimelessJewels/glorious_vanity.zip')
-		assert os.path.exists('data/TimelessJewels/glorious_vanity_passives.txt')
-		assert os.path.exists('data/TimelessJewels/lethal_pride.zip')
-		assert os.path.exists('data/TimelessJewels/lethal_pride_passives.txt')
-		assert os.path.exists('data/TimelessJewels/militant_faith.zip')
-		assert os.path.exists('data/TimelessJewels/militant_faith_passives.txt')
-		assert os.path.exists('data/TimelessJewels/stats.txt')
+		for path in [
+			'data/aura_skill.json',
+			'data/curse_skill.json',
+			'data/passive_skill.json',
+			'data/buff_skill.json',
+			'data/skill_tree.json',
+			'data/skill_tree_alternate.json',
+			'data/gems.json',
+			'data/LegionPassives.lua',
+			'data/TimelessJewels.zip',
+			'data/TimelessJewels',
+			'data/TimelessJewels/brutal_restraint.zip',
+			'data/TimelessJewels/brutal_restraint_passives.txt',
+			'data/TimelessJewels/elegant_hubris.zip',
+			'data/TimelessJewels/elegant_hubris_passives.txt',
+			'data/TimelessJewels/glorious_vanity.zip',
+			'data/TimelessJewels/glorious_vanity_passives.txt',
+			'data/TimelessJewels/lethal_pride.zip',
+			'data/TimelessJewels/lethal_pride_passives.txt',
+			'data/TimelessJewels/militant_faith.zip',
+			'data/TimelessJewels/militant_faith_passives.txt',
+			'data/TimelessJewels/stats.txt',
+		]:
+			assert os.path.exists(path)
 
 	def test_old_version_passives(self) -> None:
 		character = {
@@ -352,7 +355,7 @@ class TestAuras(unittest.TestCase):
 			'hashes_ex': [],
 		}
 		with warnings.catch_warnings(record=True):
-			stats_for_character(character, skills)  # just test that there's no exception
+			stats_for_character(character, skills, False)  # just test that there's no exception
 
 
 def string_in_result_array(string: str, result_array: list[list[str]]):

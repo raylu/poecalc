@@ -12,7 +12,6 @@ if len(sys.argv) == 3:
 import mimetypes
 import warnings
 
-from httpx import HTTPStatusError
 from pigwig import PigWig, Response
 from pigwig.exceptions import HTTPException
 
@@ -31,8 +30,8 @@ def analyze_auras(request, account: str, character: str):
 		account = account.encode('latin1').decode('utf-8')
 		character = character.encode('latin1').decode('utf-8')
 		try:
-			char_stats, char, skills = stats.fetch_stats(account, character)
-		except HTTPStatusError:
+			char_stats, char, skills, alternate_skill_tree = stats.fetch_stats(account, character)
+		except stats.CharacterNotFound:
 			return Response.render(request, 'auras.jinja2', {
 				'warnings': 'Could not fetch character. Make sure the spelling is correct.',
 				'account': account,
@@ -46,7 +45,8 @@ def analyze_auras(request, account: str, character: str):
 		for item in char['items']:
 			active_skills += gems.parse_skills_in_item(item, char_stats)
 
-		aura_results, vaal_aura_results = analyzer.analyze_auras(char_stats, char, active_skills, skills)
+		aura_results, vaal_aura_results = analyzer.analyze_auras(
+				char_stats, char, active_skills, skills, alternate_skill_tree)
 		curse_results = analyzer.analyze_curses(char_stats, active_skills)
 		mine_results = analyzer.analyze_mines(char_stats, active_skills)
 		link_results = analyzer.analyze_links(char_stats, active_skills)

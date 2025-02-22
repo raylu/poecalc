@@ -5,8 +5,8 @@ import stats
 
 class Auras:
 
-    def analyze_auras(self, char_stats: stats.Stats, char: dict, active_skills: list[gems.SkillGem], skills: dict) \
-            -> tuple[list[list[str]], list[list[str]]]:
+    def analyze_auras(self, char_stats: stats.Stats, char: dict, active_skills: list[gems.SkillGem], skills: dict,
+            alternate_skill_tree: bool) -> tuple[list[list[str]], list[list[str]]]:
         aura_counter = []
 
         results = [[f'// character increased aura effect: {char_stats.aura_effect}%']]
@@ -19,7 +19,7 @@ class Auras:
                 if 'vaal' in gem.tags:
                     vaal_results.append(gem.get_aura(get_vaal_effect=True))
 
-        tree, masteries = stats.passive_skill_tree()
+        tree, masteries = stats.passive_skill_tree(alternate_skill_tree)
         for node_name, _ in stats.iter_passives(tree, masteries, skills):
             if ascendancy_result := self.ascendancy_mod(aura_counter, char_stats, node_name):
                 results.append(ascendancy_result)
@@ -143,10 +143,13 @@ class Auras:
                     '+1000 to Armour',
                     'You deal 6 to 12 added Physical Damage for each Impale on Enemy',
                 ],
+            'Light of Divinity': [
+                'Nearby Enemies take 25% increased Elemental Damage',
+            ],
         }
         if node_name not in ascendancies:
             return []
-        return [f'//{node_name}'] + ascendancies[node_name]
+        return [f'// {node_name}'] + ascendancies[node_name]
 
     @staticmethod
     def item_aura(item: dict, char_stats: stats.Stats, aura_counter: list) -> list[str]:
@@ -183,9 +186,10 @@ class Auras:
 
 
 if __name__ == '__main__':
-    character_stats, character, allocated_passives = stats.fetch_stats('raylu', 'auraraylu')
+    character_stats, character, allocated_passives, alternate_skill_tree = stats.fetch_stats('raylu', 'auraraylu')
     skill_gems: list[gems.SkillGem] = []
     for i in character['items']:
         skill_gems.extend(gems.parse_skills_in_item(i, character_stats))
-    aura_results = Auras().analyze_auras(character_stats, character, skill_gems, allocated_passives)
+    aura_results = Auras().analyze_auras(
+            character_stats, character, skill_gems, allocated_passives, alternate_skill_tree)
     print('\n\n'.join('\n'.join(ar) for result in aura_results for ar in result))

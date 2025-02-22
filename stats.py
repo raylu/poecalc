@@ -58,9 +58,21 @@ class Stats:
 client = httpx.Client(timeout=15)
 client.headers['User-Agent'] = 'Mozilla/5.0 (X11; Linux x86_64; rv:102.0) Gecko/20100101 Firefox/102.0'
 
+class CharacterNotFound(Exception):
+	pass
 
-def fetch_stats(account: str, character_name: str) -> tuple[Stats, dict, dict]:
+def fetch_stats(account: str, character_name: str) -> tuple[Stats, dict, dict, bool]:
 	params = {'accountName': account, 'character': character_name, 'realm': 'pc'}
+	r = client.post('https://www.pathofexile.com/character-window/get-characters', data=params)
+	r.raise_for_status()
+	for character in r.json():
+		if character['name'] == character_name:
+			alternate_skill_tree = character['league'] == 'Phrecia'
+			break
+	else:
+		raise CharacterNotFound
+
+	params['character'] = character_name
 	r = client.post('https://www.pathofexile.com/character-window/get-items', data=params)
 	r.raise_for_status()
 	character = r.json()
@@ -81,17 +93,17 @@ def fetch_stats(account: str, character_name: str) -> tuple[Stats, dict, dict]:
 	r = client.get('https://www.pathofexile.com/character-window/get-passive-skills', params=params)
 	r.raise_for_status()
 	skills = r.json()
-	return stats_for_character(character, skills)
+	return stats_for_character(character, skills, alternate_skill_tree)
 
 
-def stats_for_character(character: dict, skills: dict) -> tuple[Stats, dict, dict]:
-	tree, masteries = passive_skill_tree()
+def stats_for_character(character: dict, skills: dict, alternate_skill_tree: bool) -> tuple[Stats, dict, dict, bool]:
+	tree, masteries = passive_skill_tree(alternate_skill_tree)
 	# find the tree for this class
 	class_name = character['character']['class'] # "Scion" or "Ascendant"
 	for class_tree in tree['classes']:
 		if class_tree['name'] == class_name:
 			break
-		ascendancies = (ascendancy['id'] for ascendancy in class_tree['ascendancies'])
+		ascendancies = (ascendancy['name'] for ascendancy in class_tree['ascendancies'])
 		if class_name in ascendancies:
 			break
 	else:
@@ -127,7 +139,7 @@ def stats_for_character(character: dict, skills: dict) -> tuple[Stats, dict, dic
 	stats.mana = round((stats.flat_mana + stats.intelligence // 2) * (1 + stats.inc_mana / 100))
 	stats.life = round(
 			(stats.flat_life + stats.strength // 2) * (1 + stats.inc_life / 100) * (1 + stats.more_life / 100))
-	return stats, character, skills
+	return stats, character, skills, alternate_skill_tree
 
 
 def iter_passives(tree: dict, masteries: dict, skills: dict) -> Iterator[tuple[str, list[str]]]:
@@ -153,8 +165,10 @@ def iter_passives(tree: dict, masteries: dict, skills: dict) -> Iterator[tuple[s
 		yield node['name'], node['stats']
 
 
-def passive_skill_tree() -> tuple[dict, dict]:
-	with open('data/skill_tree.json', 'r', encoding='utf8') as file:
+def passive_skill_tree(alternate_skill_tree: bool) -> tuple[dict, dict]:
+	path = 'data/skill_tree_alternate.json' if alternate_skill_tree else 'data/skill_tree.json'
+	print('using skill tree', path)
+	with open(path, 'r', encoding='utf8') as file:
 		tree_dict = json.load(file)
 
 	masteries_dict = {}
@@ -179,6 +193,7 @@ matchers = [(re.compile(pattern), attr) for pattern, attr in [
 	(r'(\d+)% increased (Intelligence|Attributes)', 'inc_int'),
 	(r'(\d+)% increased maximum Mana$', 'inc_mana'),
 	(r'(\d+)% increased effect of Non-Curse Auras from your Skills$', 'aura_effect'),
+	(r'(\d+)% increased Effect of Non-Curse Auras from your Skills while you have a Linked Target$', 'aura_effect'),
 	(r'(.*) has (\d+)% increased Aura Effect', 'specific_aura_effect'),
 	(r'(.\d+) to Level of all (.*) Gems', 'global_level'),
 	(r'(.\d+)% to Quality of all (.*) Gems', 'global_quality'),
